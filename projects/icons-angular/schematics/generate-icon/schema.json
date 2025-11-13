@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/schema",
+  "id": "GenerateIconSchema",
+  "title": "Generate Icon Options",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Icon name (kebab-case).",
+      "$default": {
+        "$source": "argv",
+        "index": 0
+      }
+    },
+    "variant": {
+      "type": "string",
+      "description": "Icon variant (filled, outlined, etc.).",
+      "default": "filled"
+    }
+  },
+  "required": ["name"]
+}
+

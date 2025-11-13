@@ -1,0 +1,10 @@
+:host(.wb-icon_host) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  width: 1em;
+  height: 1em;
+  color: inherit;
+  flex-shrink: 0;
+}

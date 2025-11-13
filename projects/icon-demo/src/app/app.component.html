@@ -1,0 +1,55 @@
+<main class="demo-layout">
+  <section class="demo-container">
+    <header class="demo-header">
+      <h1>{{ title }}</h1>
+      <p>
+        Vista de referencia para todos los íconos registrados. Ejecuta
+        <code>npm run icons:manifest</code>
+        tras agregar SVGs nuevos.
+      </p>
+      <div class="demo-tags">
+        <span>Angular 14.3</span>
+        <span>@weibook/icons-angular</span>
+        <span>wb-icon-gallery</span>
+      </div>
+    </header>
+
+    <div class="demo-search">
+      <label for="icon-search">Buscar iconos</label>
+      <input
+        id="icon-search"
+        type="search"
+        [(ngModel)]="searchQuery"
+        placeholder="Ej. download, filled, outlined"
+        aria-label="Buscar iconos por nombre o variante"
+      />
+    </div>
+
+    <div class="demo-grid">
+      <wb-icon-gallery title="Todos los íconos" [search]="searchQuery"></wb-icon-gallery>
+      <wb-icon-gallery
+        title="Variante filled"
+        variant="filled"
+        [search]="searchQuery"
+      ></wb-icon-gallery>
+      <wb-icon-gallery
+        title="Variante outlined"
+        variant="outlined"
+        [search]="searchQuery"
+      ></wb-icon-gallery>
+
+      <section class="demo-playground">
+        <h2>Playground</h2>
+        <p>
+          Ajusta tamaño, color, animaciones y texto inline para probar el
+          comportamiento del componente.
+        </p>
+        <div class="demo-playground__icon">
+          <wb-icon size="4rem" animation="shake" ariaLabel="Descargar con animación">
+            download
+          </wb-icon>
+        </div>
+      </section>
+    </div>
+  </section>
+</main>

@@ -1,0 +1,40 @@
+<section class="wb-gallery">
+  <header class="wb-gallery__header">
+    <div class="wb-gallery__heading">
+      <h2 class="wb-gallery__title">
+        {{ title }}
+      </h2>
+      <p class="wb-gallery__description" *ngIf="description">
+        {{ description }}
+      </p>
+    </div>
+    <span class="wb-gallery__badge">
+      {{ displayItems.length }} icons
+    </span>
+  </header>
+
+  <div *ngIf="displayItems.length; else emptyState" class="wb-gallery__grid">
+    <article
+      *ngFor="let icon of displayItems; trackBy: trackByKey"
+      class="wb-gallery__card"
+    >
+      <wb-icon
+        class="wb-gallery__icon"
+        [name]="icon.name"
+        [variant]="icon.variant"
+        ariaLabel="{{ icon.name }} {{ icon.variant ?? '' }} icon"
+        size="1.5rem"
+      ></wb-icon>
+      <span class="wb-gallery__label">{{ icon.name }}</span>
+      <span class="wb-gallery__variant">
+        {{ icon.variant ?? 'default' }}
+      </span>
+    </article>
+  </div>
+
+  <ng-template #emptyState>
+    <div class="wb-gallery__empty">
+      <p>No se encontraron íconos para la búsqueda actual.</p>
+    </div>
+  </ng-template>
+</section>

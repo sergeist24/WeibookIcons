@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": [
+    "tools/**/*.mjs",
+    "projects/icons-angular/src/**/*.ts"
+  ],
+  "exclude": [
+    "projects/icons-angular/src/lib/generated/**/*.ts",
+    "dist/**"
+  ]
+}
+
