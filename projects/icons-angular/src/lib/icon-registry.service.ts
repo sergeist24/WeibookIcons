@@ -148,7 +148,7 @@ export class IconRegistryService {
     }
 
     if (!request.namespace || !request.iconName) {
-      return throwError(() => new Error(`Icon "${name}" is not registered.`));
+      return throwError(new Error(`Icon "${name}" is not registered.`));
     }
 
     return this.loadIconFromSet(request.namespace, request.iconName, request.variant);
@@ -173,7 +173,7 @@ export class IconRegistryService {
       return this.loadIndividualIcon(name, this.defaultVariant);
     }
 
-    return throwError(() => new Error(`Icon "${name}"${variant ? ` (variant "${variant}")` : ''} is not registered.`));
+    return throwError(new Error(`Icon "${name}"${variant ? ` (variant "${variant}")` : ''} is not registered.`));
   }
 
   private loadIconFromSet(namespace: string, iconName: string, variant?: IconVariant): Observable<SVGElement> {
@@ -185,7 +185,7 @@ export class IconRegistryService {
         return this.loadIconFromSet(namespace, iconName, this.defaultVariant);
       }
 
-      return throwError(() => new Error(`Icon namespace "${namespace}" is not registered.`));
+      return throwError(new Error(`Icon namespace "${namespace}" is not registered.`));
     }
 
     return defer(async () => {
@@ -214,7 +214,7 @@ export class IconRegistryService {
     }
 
     if (!config.safeUrl) {
-      return throwError(() => new Error(`Icon "${config.key}" is missing a valid source.`));
+      return throwError(new Error(`Icon "${config.key}" is missing a valid source.`));
     }
 
     if (this.urlFetchCache.has(config.key)) {
@@ -223,7 +223,7 @@ export class IconRegistryService {
 
     const sanitizedUrl = this.sanitizer.sanitize(SecurityContext.RESOURCE_URL, config.safeUrl);
     if (!sanitizedUrl) {
-      return throwError(() => new Error(`Icon "${config.key}" contains an unsafe resource URL.`));
+      return throwError(new Error(`Icon "${config.key}" contains an unsafe resource URL.`));
     }
 
     const request$ = this.http.get(sanitizedUrl, { responseType: 'text' }).pipe(

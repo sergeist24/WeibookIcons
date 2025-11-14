@@ -36,6 +36,7 @@ pnpm add @weibook/icons-angular
 
 - Angular `>=14.3.0`
 - `@angular/platform-browser` y `@angular/common/http`
+- RxJS `>=6.5.5`
 
 ---
 
