@@ -8,3 +8,11 @@
   color: inherit;
   flex-shrink: 0;
 }
+
+:host(.wb-icon_host) svg {
+  fill: currentColor !important;
+}
+
+:host(.wb-icon_host) svg * {
+  fill: currentColor !important;
+}

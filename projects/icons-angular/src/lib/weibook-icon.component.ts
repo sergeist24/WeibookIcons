@@ -19,6 +19,7 @@ import {
 import { Subscription } from 'rxjs';
 import { take } from 'rxjs/operators';
 import { IconRegistryService } from './icon-registry.service';
+import { IconThemeDefinition } from './icon.types';
 
 type IconKey = {
   name: string;
@@ -99,6 +100,7 @@ export class WeibookIconComponent
   private pendingRender = false;
   private scheduledContentRender = false;
   private scheduledTimeout: ReturnType<typeof setTimeout> | null = null;
+  private currentSvg?: SVGElement;
 
   ngOnChanges(changes: SimpleChanges): void {
     if (
@@ -230,6 +232,7 @@ export class WeibookIconComponent
       .subscribe({
         next: (svg) => {
           this.attachSvgToHost(svg);
+          this.applyColorToSvg();
           this.cdr.markForCheck();
         },
         error: (error) => {
@@ -273,6 +276,7 @@ export class WeibookIconComponent
       svg.setAttribute('height', '1em');
     }
 
+    this.currentSvg = svg;
     this.renderer.appendChild(host, svg);
   }
 
@@ -298,6 +302,7 @@ export class WeibookIconComponent
     }
 
     this.renderer.setProperty(host, 'textContent', '');
+    this.currentSvg = undefined;
   }
 
   private applyFontSet(): void {
@@ -320,47 +325,119 @@ export class WeibookIconComponent
   private applyTheme(): void {
     const host = this.elementRef.nativeElement;
 
-    if (this.appliedThemeClasses.length) {
-      this.appliedThemeClasses.forEach((className) => this.renderer.removeClass(host, className));
-      this.appliedThemeClasses = [];
-    }
-
-    this.appliedInlineThemeStyles.forEach((styleName) => this.renderer.removeStyle(host, styleName));
-    this.appliedInlineThemeStyles = [];
+    this.clearThemeStyles(host);
 
     if (!this.color) {
       return;
     }
 
     const theme = this.registry.getTheme(this.color);
+    const colorValue = theme ? this.resolveThemeColor(theme) : this.color;
 
     if (theme) {
-      if (theme.className) {
-        const classes = theme.className.split(' ').filter(Boolean);
-        classes.forEach((className) => this.renderer.addClass(host, className));
-        this.appliedThemeClasses = classes;
-      }
+      this.applyThemeStyles(host, theme);
+    }
 
-      if (theme.cssVariable) {
-        this.renderer.setStyle(host, 'color', `var(${theme.cssVariable})`);
-        this.appliedInlineThemeStyles.push('color');
-      } else if (theme.color) {
-        this.renderer.setStyle(host, 'color', theme.color);
-        this.appliedInlineThemeStyles.push('color');
-      }
+    this.renderer.setStyle(host, 'color', colorValue);
+    this.appliedInlineThemeStyles.push('color');
 
-      if (theme.inlineStyles) {
-        Object.entries(theme.inlineStyles).forEach(([key, value]) => {
-          this.renderer.setStyle(host, key, value);
-          this.appliedInlineThemeStyles.push(key);
-        });
-      }
+    if (this.currentSvg) {
+      this.applyColorToSvg();
+    }
+  }
 
+  private clearThemeStyles(host: HTMLElement): void {
+    this.appliedThemeClasses.forEach((className) => this.renderer.removeClass(host, className));
+    this.appliedThemeClasses = [];
+    this.appliedInlineThemeStyles.forEach((styleName) => this.renderer.removeStyle(host, styleName));
+    this.appliedInlineThemeStyles = [];
+  }
+
+  private applyThemeStyles(host: HTMLElement, theme: IconThemeDefinition): void {
+    if (theme.className) {
+      const classes = theme.className.split(' ').filter(Boolean);
+      classes.forEach((className) => this.renderer.addClass(host, className));
+      this.appliedThemeClasses = classes;
+    }
+
+    if (theme.inlineStyles) {
+      Object.entries(theme.inlineStyles).forEach(([key, value]) => {
+        this.renderer.setStyle(host, key, value);
+        this.appliedInlineThemeStyles.push(key);
+      });
+    }
+  }
+
+  private resolveThemeColor(theme: IconThemeDefinition): string {
+    if (theme.color) {
+      return theme.color;
+    }
+
+    if (theme.cssVariable) {
+      const variableValue = theme.inlineStyles?.[theme.cssVariable];
+      if (variableValue) {
+        const fallbackMatch = variableValue.match(/var\([^,]+,\s*([^)]+)\)/);
+        return fallbackMatch ? fallbackMatch[1].trim() : `var(${theme.cssVariable})`;
+      }
+      return `var(${theme.cssVariable})`;
+    }
+
+    return '';
+  }
+
+  private applyColorToSvg(): void {
+    if (!this.currentSvg) {
       return;
     }
 
-    this.renderer.setStyle(host, 'color', this.color);
-    this.appliedInlineThemeStyles.push('color');
+    requestAnimationFrame(() => {
+      if (this.currentSvg) {
+        const computedColor = this.getComputedColor();
+        this.setSvgFillAndStroke(this.currentSvg, computedColor || 'currentColor');
+      }
+    });
+  }
+
+  private getComputedColor(): string | null {
+    const host = this.elementRef.nativeElement;
+    const computedColor = window.getComputedStyle(host).color;
+    
+    if (computedColor && computedColor !== 'rgba(0, 0, 0, 0)' && computedColor !== 'transparent') {
+      return computedColor;
+    }
+    
+    return null;
+  }
+
+  private setSvgFillAndStroke(svg: SVGElement, fillValue: string): void {
+    this.applyFillToElement(svg, fillValue);
+    
+    const elements = svg.querySelectorAll('path, circle, rect, ellipse, line, polyline, polygon, g');
+    elements.forEach((element) => {
+      const el = element as SVGElement;
+      this.applyFillToElement(el, fillValue);
+      this.applyStrokeToElement(el, fillValue);
+    });
+  }
+
+  private applyFillToElement(element: SVGElement, fillValue: string): void {
+    const fill = element.getAttribute('fill');
+    
+    if (!fill || fill === 'none' || !this.isSpecialFill(fill)) {
+      element.setAttribute('fill', fillValue);
+    }
+  }
+
+  private applyStrokeToElement(element: SVGElement, strokeValue: string): void {
+    const stroke = element.getAttribute('stroke');
+    
+    if (stroke && stroke !== 'none' && !this.isSpecialFill(stroke)) {
+      element.setAttribute('stroke', strokeValue);
+    }
+  }
+
+  private isSpecialFill(value: string): boolean {
+    return /^(url\(|var\(|currentColor)/.test(value);
   }
 
   private applyAnimation(): void {
