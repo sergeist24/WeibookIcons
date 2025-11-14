@@ -1,6 +1,6 @@
 {
   "name": "@weibook/icons-angular",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Weibook icon components for Angular 14+ applications.",
   "author": "Weibook",
   "license": "MIT",
@@ -24,7 +24,7 @@
   "schematics": "./schematics/collection.json",
   "repository": {
     "type": "git",
-    "url": "https://github.com/sergeist24/WeibookIcons.git"
+    "url": "git+https://github.com/sergeist24/WeibookIcons.git"
   },
   "bugs": {
     "url": "https://github.com/sergeist24/WeibookIcons/issues"
