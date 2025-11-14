@@ -1,6 +1,6 @@
 import { TestBed } from '@angular/core/testing';
 import { HttpClientTestingModule, HttpTestingController } from '@angular/common/http/testing';
-import { firstValueFrom } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { IconRegistryService, provideWeibookIcons } from './icon-registry.service';
 
 const OUTLINED_SVG = '<svg viewBox="0 0 24 24"><rect width="24" height="24" fill="none" stroke="currentColor"/></svg>';
@@ -49,15 +49,15 @@ describe('IconRegistryService', () => {
     const url = '/assets/icons/cloud.svg';
     service.registerSvgIcon('cloud', { url }, { variant: 'outlined' });
 
-    const promise = firstValueFrom(service.getNamedSvgIcon('cloud'));
+    const promise = service.getNamedSvgIcon('cloud').pipe(take(1)).toPromise();
 
     const request = httpMock.expectOne((req) => req.url.includes(url));
     request.flush('<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>');
 
     const svg = await promise;
-    expect(svg.getAttribute('viewBox')).toBe('0 0 24 24');
+    expect(svg!.getAttribute('viewBox')).toBe('0 0 24 24');
 
-    const cached = await firstValueFrom(service.getNamedSvgIcon('cloud'));
+    const cached = await service.getNamedSvgIcon('cloud').pipe(take(1)).toPromise();
     expect(cached).not.toBe(svg);
   });
 
@@ -65,7 +65,7 @@ describe('IconRegistryService', () => {
     const literalSvg = '<svg viewBox="0 0 24 24"><rect width="24" height="24"/></svg>';
     service.registerSvgIcon('download', { svgText: literalSvg }, { variant: 'outlined' });
 
-    const svg = await firstValueFrom(service.getNamedSvgIcon('download'));
+    const svg = await service.getNamedSvgIcon('download').pipe(take(1)).toPromise();
     expect(svg).toBeTruthy();
   });
 

@@ -2,7 +2,8 @@ import { DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
 import { ENVIRONMENT_INITIALIZER, Inject, Injectable, Optional, SecurityContext, inject } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
-import { Observable, defer, finalize, firstValueFrom, map, of, shareReplay, throwError } from 'rxjs';
+import { Observable, defer, of, throwError } from 'rxjs';
+import { finalize, map, shareReplay, take } from 'rxjs/operators';
 import { IconAlias, IconAnimationDefinition, IconSetRegistration, IconSource, IconThemeDefinition, IconVariant, ProvideWeibookIconsOptions, ProvideWeibookProviders } from './icon.types';
 import { ICON_REGISTRY_CONFIG } from './icon-registry.tokens';
 
@@ -258,7 +259,10 @@ export class IconRegistryService {
       throw new Error(`Icon set "${config.namespace}" contains an unsafe resource URL.`);
     }
 
-    const svgText = await firstValueFrom(this.http.get(sanitizedUrl, { responseType: 'text' }));
+    const svgText = await this.http.get(sanitizedUrl, { responseType: 'text' }).pipe(take(1)).toPromise();
+    if (!svgText) {
+      throw new Error(`Failed to fetch icon set "${config.namespace}" from URL.`);
+    }
     config.svgText = svgText;
     config.parsedSvg = this.buildSvgElement(svgText);
 

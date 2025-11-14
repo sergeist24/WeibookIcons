@@ -16,7 +16,8 @@ import {
   AfterContentChecked,
   inject,
 } from '@angular/core';
-import { Subscription, take } from 'rxjs';
+import { Subscription } from 'rxjs';
+import { take } from 'rxjs/operators';
 import { IconRegistryService } from './icon-registry.service';
 
 type IconKey = {
