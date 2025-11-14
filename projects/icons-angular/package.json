@@ -8,7 +8,9 @@
     "angular",
     "icons",
     "svg",
-    "weibook"
+    "weibook",
+    "angular-icons",
+    "icon-library"
   ],
   "sideEffects": false,
   "peerDependencies": {
@@ -19,5 +21,13 @@
   "dependencies": {
     "tslib": "^2.3.0"
   },
-  "schematics": "./schematics/collection.json"
+  "schematics": "./schematics/collection.json",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/sergeist24/WeibookIcons.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sergeist24/WeibookIcons/issues"
+  },
+  "homepage": "https://sergeist24.github.io/WeibookIcons/"
 }

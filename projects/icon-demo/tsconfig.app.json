@@ -3,7 +3,16 @@
   "extends": "../../tsconfig.json",
   "compilerOptions": {
     "outDir": "../../out-tsc/app",
-    "types": []
+    "types": [],
+    "baseUrl": "../../",
+    "paths": {
+      "@weibook/icons-angular": [
+        "dist/weibook-icons-angular"
+      ],
+      "@weibook/icons-angular/*": [
+        "dist/weibook-icons-angular/*"
+      ]
+    }
   },
   "files": [
     "src/main.ts",
