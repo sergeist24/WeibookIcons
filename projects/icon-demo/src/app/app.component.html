@@ -23,19 +23,25 @@
         placeholder="Ej. download, filled, outlined"
         aria-label="Buscar iconos por nombre o variante"
       />
-    </div>
+</div>
 
     <div class="demo-grid">
-      <wb-icon-gallery title="Todos los íconos" [search]="searchQuery"></wb-icon-gallery>
+      <wb-icon-gallery
+        title="Todos los íconos"
+        [search]="searchQuery"
+        (iconClick)="handleIconClick($event)"
+      ></wb-icon-gallery>
       <wb-icon-gallery
         title="Variante filled"
         variant="filled"
         [search]="searchQuery"
+        (iconClick)="handleIconClick($event)"
       ></wb-icon-gallery>
       <wb-icon-gallery
         title="Variante outlined"
         variant="outlined"
         [search]="searchQuery"
+        (iconClick)="handleIconClick($event)"
       ></wb-icon-gallery>
 
       <section class="demo-playground">
@@ -52,4 +58,10 @@
       </section>
     </div>
   </section>
+
+  <app-icon-editor-modal
+    [icon]="selectedIcon"
+    [isOpen]="isModalOpen"
+    (close)="handleModalClose()"
+  ></app-icon-editor-modal>
 </main>

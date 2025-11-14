@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, Input } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
 import { IconRegistration } from '../icon.types';
 import { WB_ICON_MANIFEST } from '../generated/icon-manifest';
 
@@ -18,6 +18,7 @@ export class IconGalleryComponent {
   @Input() icons: IconRegistration[] = WB_ICON_MANIFEST;
   @Input() variant?: string;
   @Input() search = '';
+  @Output() iconClick = new EventEmitter<IconRegistration>();
 
   get displayItems(): GalleryItem[] {
     const normalizedSearch = this.search.trim().toLowerCase();
@@ -48,6 +49,10 @@ export class IconGalleryComponent {
 
   trackByKey(_: number, item: GalleryItem): string {
     return item.key;
+  }
+
+  handleIconClick(icon: IconRegistration): void {
+    this.iconClick.emit(icon);
   }
 }
 

@@ -1,0 +1,189 @@
+<div
+  *ngIf="isOpen && icon"
+  class="icon-editor__overlay"
+  (click)="handleBackdropClick($event)"
+  (keydown)="handleKeyDown($event)"
+  tabindex="0"
+  role="dialog"
+  aria-modal="true"
+  [attr.aria-label]="'Editor de icono ' + icon.name"
+>
+  <div class="icon-editor__modal" (click)="$event.stopPropagation()">
+    <button
+      class="icon-editor__close-btn"
+      (click)="handleClose()"
+      aria-label="Cerrar editor"
+      type="button"
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 20 20"
+        fill="none"
+        xmlns="http://www.w3.org/2000/svg"
+      >
+        <path
+          d="M15 5L5 15M5 5L15 15"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+        />
+      </svg>
+    </button>
+
+    <div class="icon-editor__content">
+      <div class="icon-editor__preview">
+        <div class="icon-editor__preview-icon">
+          <wb-icon
+            [name]="icon.name"
+            [variant]="config.variant"
+            [size]="iconSize"
+            [color]="iconColor"
+            [animation]="config.animation || undefined"
+            [attr.aria-label]="icon.name + ' icon preview'"
+          ></wb-icon>
+        </div>
+        <div class="icon-editor__code-section">
+          <div class="icon-editor__code-header">
+            <span class="icon-editor__code-label">Código Angular</span>
+            <button
+              class="icon-editor__copy-btn"
+              (click)="handleCopyCode()"
+              type="button"
+              aria-label="Copiar código"
+            >
+              Copiar
+            </button>
+          </div>
+          <pre class="icon-editor__code"><code>{{ generatedCode }}</code></pre>
+        </div>
+      </div>
+
+      <div class="icon-editor__controls">
+        <h3 class="icon-editor__controls-title">Personalizar Icono</h3>
+
+        <div class="icon-editor__control-group">
+          <label class="icon-editor__label" for="size-input">Tamaño</label>
+          <div class="icon-editor__size-controls">
+            <input
+              id="size-input"
+              type="number"
+              class="icon-editor__input"
+              [value]="config.size"
+              (input)="handleSizeChange($any($event.target).value)"
+              min="1"
+              step="1"
+            />
+            <div class="icon-editor__unit-toggle">
+              <button
+                type="button"
+                class="icon-editor__unit-btn"
+                [class.active]="config.sizeUnit === 'px'"
+                (click)="handleSizeUnitChange('px')"
+              >
+                px
+              </button>
+              <button
+                type="button"
+                class="icon-editor__unit-btn"
+                [class.active]="config.sizeUnit === 'rem'"
+                (click)="handleSizeUnitChange('rem')"
+              >
+                rem
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="icon-editor__control-group">
+          <label class="icon-editor__label" for="color-type">Tipo de Color</label>
+          <select
+            id="color-type"
+            class="icon-editor__select"
+            [value]="config.colorType"
+            (change)="handleColorTypeChange($any($event.target).value)"
+          >
+            <option value="hex">Código Hex</option>
+            <option value="theme">Tema</option>
+          </select>
+        </div>
+
+        <div class="icon-editor__control-group" *ngIf="config.colorType === 'hex'">
+          <label class="icon-editor__label" for="color-input">Color (Hex)</label>
+          <div class="icon-editor__color-controls">
+            <input
+              id="color-input"
+              type="color"
+              class="icon-editor__color-input"
+              [value]="config.color"
+              (input)="handleColorChange($any($event.target).value)"
+            />
+            <input
+              type="text"
+              class="icon-editor__input icon-editor__input--color-text"
+              [value]="config.color"
+              (input)="handleColorChange($any($event.target).value)"
+              placeholder="#1f2937"
+            />
+          </div>
+        </div>
+
+        <div class="icon-editor__control-group" *ngIf="config.colorType === 'theme'">
+          <label class="icon-editor__label" for="theme-select">Tema</label>
+          <select
+            id="theme-select"
+            class="icon-editor__select"
+            [value]="config.color"
+            (change)="handleColorChange($any($event.target).value)"
+          >
+            <option *ngFor="let theme of availableThemes" [value]="theme">
+              {{ theme }}
+            </option>
+          </select>
+        </div>
+
+        <div class="icon-editor__control-group">
+          <label class="icon-editor__label" for="animation-select">Animación</label>
+          <select
+            id="animation-select"
+            class="icon-editor__select"
+            [value]="config.animation"
+            (change)="handleAnimationChange($any($event.target).value)"
+          >
+            <option value="">Sin animación</option>
+            <option *ngFor="let anim of availableAnimations" [value]="anim">
+              {{ anim }}
+            </option>
+          </select>
+        </div>
+
+        <div class="icon-editor__control-group">
+          <label class="icon-editor__label" for="variant-select">Variante</label>
+          <select
+            id="variant-select"
+            class="icon-editor__select"
+            [value]="config.variant || ''"
+            (change)="handleVariantChange($any($event.target).value || undefined)"
+          >
+            <option value="">Sin variante</option>
+            <option value="filled">filled</option>
+            <option value="outlined">outlined</option>
+          </select>
+        </div>
+
+        <div class="icon-editor__control-group">
+          <label class="icon-editor__label icon-editor__label--checkbox">
+            <input
+              type="checkbox"
+              class="icon-editor__checkbox"
+              [checked]="config.useNameAttribute"
+              (change)="handleUseNameAttributeChange($any($event.target).checked)"
+            />
+            <span>Usar atributo [name] en lugar de contenido</span>
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

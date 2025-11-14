@@ -17,6 +17,12 @@
     <article
       *ngFor="let icon of displayItems; trackBy: trackByKey"
       class="wb-gallery__card"
+      (click)="handleIconClick(icon)"
+      (keydown.enter)="handleIconClick(icon)"
+      (keydown.space)="handleIconClick(icon)"
+      tabindex="0"
+      role="button"
+      [attr.aria-label]="'Editar icono ' + icon.name + (icon.variant ? ' ' + icon.variant : '')"
     >
       <wb-icon
         class="wb-gallery__icon"
