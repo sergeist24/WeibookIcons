@@ -4,7 +4,12 @@
   "scripts": {
     "ng": "ng",
     "icons:manifest": "node tools/generate-icons-manifest.mjs",
-    "build": "npm run icons:manifest && ng build icons-angular",
+    "icons:cli": "node tools/cli.mjs",
+    "icons:generate": "node tools/cli.mjs generate",
+    "icons:validate": "node tools/cli.mjs validate",
+    "icons:stats": "node tools/cli.mjs stats",
+    "icons:optimize": "node tools/cli.mjs optimize",
+    "build": "npm run icons:generate && ng build icons-angular",
     "build:watch": "ng build icons-angular --watch --configuration development",
     "test": "ng test icons-angular",
     "lint": "ng lint icons-angular"

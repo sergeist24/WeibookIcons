@@ -1,0 +1,164 @@
+# Cursor Rules para WeibookIcons
+
+Este archivo contiene reglas específicas para la IA cuando realiza modificaciones en este repositorio.
+
+## Estructura del Proyecto
+
+- **Librería principal**: `projects/icons-angular/` - Contiene el código fuente de la librería Angular
+- **Demo**: `projects/icon-demo/` - Aplicación de demostración interactiva
+- **Iconos**: `icons/` - Directorio con archivos SVG organizados por variante (`filled/`, `outlined/`)
+- **Herramientas**: `tools/` - Scripts CLI y utilidades para generación de manifest
+
+## Convenciones de Código
+
+### Componentes Angular
+
+1. **Selectores**: Todos los componentes deben usar el prefijo `wb-` (ej: `wb-icon`, `wb-icon-gallery`, `wb-icon-editor-modal`)
+2. **Outputs**: Los outputs NO deben nombrarse como eventos DOM estándar (evitar `close`, `open`, `change`). Usar nombres descriptivos como `modalClose`, `iconClick`, etc.
+3. **Change Detection**: El componente principal `WeibookIconComponent` usa `OnPush` - siempre considerar esto al hacer cambios
+4. **Imports**: Usar imports absolutos desde `@weibook/icons-angular` en lugar de rutas relativas cuando sea posible
+
+### TypeScript
+
+1. **Interfaces**: Definir interfaces para configuraciones complejas (ej: `IconEditorConfig`)
+2. **Tipos**: Usar tipos específicos en lugar de `any` cuando sea posible
+3. **Métodos privados**: Prefijar métodos privados con `private` y usar nombres descriptivos
+4. **Getters**: Usar getters para propiedades computadas que se usan en templates
+
+### Estilos CSS
+
+1. **Host Binding**: Usar `@HostBinding` para clases CSS dinámicas en lugar de manipulación directa del DOM
+2. **Clases**: Seguir el patrón `wb-icon--*` para clases de modificación
+3. **Transiciones**: Las transiciones deben estar condicionadas por la propiedad `transition`
+4. **Variables CSS**: Usar variables CSS para temas (patrón `--wb-icon-color-*`)
+
+## Funcionalidades Principales
+
+### Componente wb-icon
+
+**Inputs principales:**
+- `name`: Nombre del icono
+- `variant`: Variante del icono (`filled`, `outlined`)
+- `color`: Color o tema del icono
+- `size`: Tamaño del icono
+- `animation`: Nombre de la animación
+- `strokeWidth`: Grosor del borde (string o number)
+- `stroke`: Color del borde
+- `transition`: Habilita transiciones suaves
+- `from`/`to`/`active`: Para icon morphing
+- `ariaLabel`: Etiqueta de accesibilidad
+
+**Características importantes:**
+- Soporta cambios dinámicos en todas las propiedades
+- Usa `OnPush` change detection - considerar esto al agregar nuevas funcionalidades
+- Aplica stroke a todos los elementos SVG relevantes (path, circle, rect, etc.)
+- Morphing usa transiciones de opacidad y transformación
+
+### Icon Morphing
+
+- Requiere `from` y `to` para activarse
+- `active` controla qué icono se muestra (true = `to`, false = `from`)
+- Los iconos de morphing se cargan y cachean por separado
+- Las transiciones son suaves (0.3s ease)
+
+### Animaciones
+
+- Definidas en `icon-presets.ts` como `WB_ICON_ANIMATIONS`
+- Cada animación incluye `className`, `inlineStyles` y opcionalmente `keyframes`
+- Los keyframes se inyectan una sola vez en el documento
+- Las animaciones pueden ser dinámicas (cambiar con bindings)
+
+### Temas
+
+- Definidos en `icon-presets.ts` como `WB_ICON_THEMES`
+- Usan variables CSS con fallbacks
+- Pueden ser sobrescritos mediante providers
+- El componente resuelve colores de temas automáticamente
+
+## Reglas Específicas para Modificaciones
+
+### Al Agregar Nuevas Propiedades
+
+1. **Agregar al componente**: Definir `@Input()` en `weibook-icon.component.ts`
+2. **Actualizar `ngOnChanges`**: Agregar la propiedad a la lógica de detección de cambios
+3. **Aplicar en `renderIcon`**: Asegurar que la propiedad se aplique al SVG renderizado
+4. **Actualizar CSS si es necesario**: Agregar estilos o transiciones si aplica
+5. **Actualizar la demo**: Agregar controles en `icon-editor-modal` si es una propiedad personalizable
+6. **Actualizar README**: Documentar la nueva propiedad en la tabla de Inputs
+
+### Al Modificar Animaciones
+
+1. **Definir en `icon-presets.ts`**: Agregar a `WB_ICON_ANIMATIONS`
+2. **Incluir keyframes**: Si la animación requiere keyframes, definirlos como constantes
+3. **Actualizar la demo**: Agregar a la lista de animaciones disponibles en el modal
+4. **Actualizar README**: Documentar la nueva animación
+
+### Al Modificar Temas
+
+1. **Definir en `icon-presets.ts`**: Agregar a `WB_ICON_THEMES`
+2. **Usar variables CSS**: Preferir variables CSS con fallbacks
+3. **Actualizar la demo**: Agregar a la lista de temas disponibles
+4. **Actualizar README**: Documentar el nuevo tema
+
+### Al Trabajar con la Demo
+
+1. **Modal de personalización**: El modal debe incluir TODAS las propiedades personalizables
+2. **Preview en tiempo real**: El preview debe reflejar todos los cambios inmediatamente
+3. **Código generado**: El código generado debe ser válido y copiable
+4. **Tabs de código**: Cuando morphing está activo, deshabilitar la tab de "Nombre del Icono"
+5. **Scroll bloqueado**: Bloquear el scroll del body cuando la modal está abierta
+
+### Al Trabajar con SVG
+
+1. **Optimización**: Los SVGs se optimizan automáticamente con SVGO
+2. **ViewBox requerido**: Todos los SVGs deben tener `viewBox`
+3. **currentColor**: Usar `currentColor` para colores (permite theming)
+4. **Sin IDs duplicados**: Evitar IDs duplicados en SVGs
+5. **Stroke**: Aplicar stroke a elementos relevantes (path, circle, rect, ellipse, line, polyline, polygon, g)
+
+### Al Trabajar con Change Detection
+
+1. **OnPush**: El componente usa `OnPush` - usar `markForCheck()` o `detectChanges()` cuando sea necesario
+2. **Optimizaciones**: Agrupar cambios relacionados para minimizar re-renders
+3. **Detección de cambios**: En `ngOnChanges`, detectar si solo cambian estilos para evitar re-render completo
+
+### Al Trabajar con RxJS
+
+1. **ShareReplay**: Usar `shareReplay(1)` para observables que se reutilizan
+2. **Caché**: El servicio `IconRegistryService` cachea SVGs y peticiones HTTP
+3. **Manejo de errores**: Emitir errores a través de `iconError` output
+
+## Testing
+
+1. **Especificaciones**: Mantener tests actualizados cuando se agreguen nuevas funcionalidades
+2. **Cobertura**: Asegurar que las nuevas funcionalidades estén cubiertas por tests
+
+## Build y Deploy
+
+1. **Manifest**: Ejecutar `npm run icons:manifest` después de agregar nuevos iconos
+2. **Build**: Ejecutar `npm run build` antes de commitear cambios importantes
+3. **Linting**: Resolver todos los errores de linting antes de commitear
+
+## Documentación
+
+1. **README**: Mantener el README actualizado con todas las funcionalidades
+2. **Comentarios**: Agregar comentarios JSDoc para métodos públicos complejos
+3. **Ejemplos**: Incluir ejemplos de uso en el README para nuevas funcionalidades
+
+## Errores Comunes a Evitar
+
+1. **No usar `any`**: Preferir tipos específicos
+2. **No olvidar OnPush**: Considerar change detection al hacer cambios
+3. **No hardcodear valores**: Usar constantes o configuración
+4. **No olvidar accesibilidad**: Siempre considerar `ariaLabel` y `tabIndex`
+5. **No romper compatibilidad**: Mantener retrocompatibilidad cuando sea posible
+6. **No olvidar actualizar la demo**: Nuevas funcionalidades deben estar en el modal de personalización
+
+## Prioridades
+
+1. **Rendimiento**: Optimizar para OnPush change detection
+2. **Accesibilidad**: Siempre considerar usuarios con lectores de pantalla
+3. **Compatibilidad SSR**: Asegurar que todo funcione con Angular Universal
+4. **Experiencia de desarrollo**: Mantener la API simple e intuitiva
+5. **Documentación**: Mantener documentación actualizada y clara
+

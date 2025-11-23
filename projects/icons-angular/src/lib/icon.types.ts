@@ -58,3 +58,44 @@ export interface ProvideWeibookIconsOptions {
 
 export type ProvideWeibookProviders = Provider[];
 
+/**
+ * Predefined animation names available in the library.
+ * These animations are registered by default via `provideWeibookIconDefaults()`.
+ */
+export type IconAnimationName = 
+  | 'spin'
+  | 'rotate'
+  | 'pulse'
+  | 'bounce'
+  | 'shake'
+  | 'fade'
+  | 'zoom'
+  | 'tada'
+  | 'float'
+  | 'glow'
+  | 'tilt'
+  | 'flip'
+  | 'rubber'
+  | string; // Allow custom animations
+
+/**
+ * Predefined theme names available in the library.
+ * These themes are registered by default via `provideWeibookIconDefaults()`.
+ */
+export type IconThemeName =
+  | 'primary'
+  | 'secondary'
+  | 'success'
+  | 'green'
+  | 'warning'
+  | 'danger'
+  | 'orange'
+  | 'gray'
+  | 'gray2'
+  | 'gray3'
+  | 'blue'
+  | 'blue2'
+  | 'purple'
+  | 'muted'
+  | string; // Allow custom themes and direct color values
+

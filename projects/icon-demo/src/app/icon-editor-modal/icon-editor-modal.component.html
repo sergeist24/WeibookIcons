@@ -34,28 +34,95 @@
     <div class="icon-editor__content">
       <div class="icon-editor__preview">
         <div class="icon-editor__preview-icon">
-          <wb-icon
-            [name]="icon.name"
-            [variant]="config.variant"
-            [size]="iconSize"
-            [color]="iconColor"
-            [animation]="config.animation || undefined"
-            [attr.aria-label]="icon.name + ' icon preview'"
-          ></wb-icon>
+          <div class="icon-editor__preview-wrapper">
+            <wb-icon
+              *ngIf="config.useMorphing && config.morphingFrom && config.morphingTo; else normalIcon"
+              [from]="config.morphingFrom"
+              [to]="config.morphingTo"
+              [active]="config.morphingActive"
+              [size]="iconSize"
+              [color]="config.colorType === 'theme' ? config.color : iconColor"
+              [animation]="config.animation || undefined"
+              [transition]="config.transition"
+              [strokeWidth]="config.strokeWidth"
+              [stroke]="config.stroke && config.strokeColorType !== 'none' ? (config.strokeColorType === 'theme' ? config.stroke : config.stroke) : undefined"
+              [ariaLabel]="config.ariaLabel"
+              [attr.aria-label]="config.ariaLabel || icon.name + ' icon preview (morphing)'"
+            ></wb-icon>
+            <ng-template #normalIcon>
+              <wb-icon
+                [name]="icon.name"
+                [variant]="config.variant"
+                [size]="iconSize"
+                [color]="iconColor"
+                [animation]="config.animation || undefined"
+                [transition]="config.transition"
+                [strokeWidth]="config.strokeWidth"
+                [stroke]="config.stroke && config.strokeColorType !== 'none' ? (config.strokeColorType === 'theme' ? config.stroke : config.stroke) : undefined"
+                [ariaLabel]="config.ariaLabel"
+                [attr.aria-label]="config.ariaLabel || icon.name + ' icon preview'"
+              ></wb-icon>
+            </ng-template>
+            <button
+              *ngIf="config.useMorphing && config.morphingFrom && config.morphingTo"
+              class="icon-editor__play-btn"
+              (click)="toggleMorphingPlay()"
+              type="button"
+              [attr.aria-label]="config.morphingActive ? 'Pausar morphing' : 'Reproducir morphing'"
+              title="Reproducir/Pausar morphing"
+            >
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path
+                  *ngIf="!config.morphingActive"
+                  d="M8 5v14l11-7z"
+                  fill="currentColor"
+                />
+                <path
+                  *ngIf="config.morphingActive"
+                  d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"
+                  fill="currentColor"
+                />
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="icon-editor__code-section">
+          <div class="icon-editor__code-tabs">
+            <button
+              class="icon-editor__code-tab"
+              [class.active]="activeCodeTab === 'full'"
+              (click)="handleCodeTabChange('full')"
+              type="button"
+            >
+              Código Completo
+            </button>
+            <button
+              class="icon-editor__code-tab"
+              [class.active]="activeCodeTab === 'name'"
+              [class.disabled]="isNameTabDisabled"
+              [disabled]="isNameTabDisabled"
+              (click)="handleCodeTabChange('name')"
+              type="button"
+              [attr.aria-disabled]="isNameTabDisabled"
+            >
+              Nombre del Icono
+            </button>
+          </div>
           <div class="icon-editor__code-header">
-            <span class="icon-editor__code-label">Código Angular</span>
+            <span class="icon-editor__code-label">
+              {{ activeCodeTab === 'full' ? 'Código Angular' : 'Nombre del Icono' }}
+            </span>
             <button
               class="icon-editor__copy-btn"
+              [attr.data-tab]="activeCodeTab"
               (click)="handleCopyCode()"
               type="button"
-              aria-label="Copiar código"
+              [attr.aria-label]="'Copiar ' + (activeCodeTab === 'full' ? 'código' : 'nombre')"
             >
               Copiar
             </button>
           </div>
-          <pre class="icon-editor__code"><code>{{ generatedCode }}</code></pre>
+          <pre class="icon-editor__code"><code>{{ activeCodeTab === 'full' ? generatedCode : iconNameCode }}</code></pre>
         </div>
       </div>
 
@@ -152,9 +219,12 @@
           >
             <option value="">Sin animación</option>
             <option *ngFor="let anim of availableAnimations" [value]="anim">
-              {{ anim }}
+              {{ getAnimationLabel(anim) }}
             </option>
           </select>
+          <p class="icon-editor__hint" style="font-size: 0.75rem; color: #6b7280; margin-top: 4px;">
+            {{ availableAnimations.length }} animaciones disponibles
+          </p>
         </div>
 
         <div class="icon-editor__control-group">
@@ -176,11 +246,156 @@
             <input
               type="checkbox"
               class="icon-editor__checkbox"
+              [checked]="config.transition"
+              (change)="handleTransitionChange($any($event.target).checked)"
+            />
+            <span>Transiciones suaves</span>
+          </label>
+        </div>
+
+        <div class="icon-editor__control-group">
+          <label class="icon-editor__label icon-editor__label--checkbox">
+            <input
+              type="checkbox"
+              class="icon-editor__checkbox"
+              [checked]="config.useMorphing"
+              (change)="handleUseMorphingChange($any($event.target).checked)"
+            />
+            <span>Usar Icon Morphing (from/to)</span>
+          </label>
+        </div>
+
+        <div class="icon-editor__control-group" *ngIf="config.useMorphing">
+          <label class="icon-editor__label" for="morphing-from-select">Icono From</label>
+          <select
+            id="morphing-from-select"
+            class="icon-editor__select"
+            [value]="config.morphingFrom || ''"
+            (change)="handleMorphingFromChange($any($event.target).value)"
+          >
+            <option value="">Seleccionar...</option>
+            <option *ngFor="let iconName of availableIconsForMorphing" [value]="iconName">
+              {{ iconName }}
+            </option>
+          </select>
+        </div>
+
+        <div class="icon-editor__control-group" *ngIf="config.useMorphing">
+          <label class="icon-editor__label" for="morphing-to-select">Icono To</label>
+          <select
+            id="morphing-to-select"
+            class="icon-editor__select"
+            [value]="config.morphingTo || ''"
+            (change)="handleMorphingToChange($any($event.target).value)"
+          >
+            <option value="">Seleccionar...</option>
+            <option *ngFor="let iconName of availableIconsForMorphing" [value]="iconName">
+              {{ iconName }}
+            </option>
+          </select>
+        </div>
+
+        <div class="icon-editor__control-group" *ngIf="config.useMorphing && config.morphingFrom && config.morphingTo">
+          <label class="icon-editor__label icon-editor__label--checkbox">
+            <input
+              type="checkbox"
+              class="icon-editor__checkbox"
+              [checked]="config.morphingActive"
+              (change)="handleMorphingActiveChange($any($event.target).checked)"
+            />
+            <span>Activo (muestra icono "to")</span>
+          </label>
+        </div>
+
+        <div class="icon-editor__control-group">
+          <label class="icon-editor__label icon-editor__label--checkbox">
+            <input
+              type="checkbox"
+              class="icon-editor__checkbox"
               [checked]="config.useNameAttribute"
               (change)="handleUseNameAttributeChange($any($event.target).checked)"
             />
             <span>Usar atributo [name] en lugar de contenido</span>
           </label>
+        </div>
+
+        <div class="icon-editor__control-group">
+          <label class="icon-editor__label" for="stroke-width-input">Stroke Width</label>
+          <input
+            id="stroke-width-input"
+            type="text"
+            class="icon-editor__input"
+            [value]="config.strokeWidth || ''"
+            (input)="handleStrokeWidthChange($any($event.target).value)"
+            (keyup)="handleStrokeWidthChange($any($event.target).value)"
+            placeholder="Ej: 1, 2, 0.5"
+          />
+          <p class="icon-editor__hint" style="font-size: 0.75rem; color: #6b7280; margin-top: 4px;">
+            Grosor del borde (número o string con unidades)
+          </p>
+        </div>
+
+        <div class="icon-editor__control-group" *ngIf="config.strokeWidth">
+          <label class="icon-editor__label" for="stroke-color-type">Tipo de Color Stroke</label>
+          <select
+            id="stroke-color-type"
+            class="icon-editor__select"
+            [value]="config.strokeColorType"
+            (change)="handleStrokeColorTypeChange($any($event.target).value)"
+          >
+            <option value="none">Sin color (usa color del icono)</option>
+            <option value="hex">Código Hex</option>
+            <option value="theme">Tema</option>
+          </select>
+        </div>
+
+        <div class="icon-editor__control-group" *ngIf="config.strokeColorType === 'hex' && config.strokeWidth">
+          <label class="icon-editor__label" for="stroke-color-input">Color Stroke (Hex)</label>
+          <div class="icon-editor__color-controls">
+            <input
+              id="stroke-color-input"
+              type="color"
+              class="icon-editor__color-input"
+              [value]="config.stroke || '#000000'"
+              (input)="handleStrokeChange($any($event.target).value)"
+            />
+            <input
+              type="text"
+              class="icon-editor__input icon-editor__input--color-text"
+              [value]="config.stroke || '#000000'"
+              (input)="handleStrokeChange($any($event.target).value)"
+              placeholder="#000000"
+            />
+          </div>
+        </div>
+
+        <div class="icon-editor__control-group" *ngIf="config.strokeColorType === 'theme' && config.strokeWidth">
+          <label class="icon-editor__label" for="stroke-theme-select">Tema Stroke</label>
+          <select
+            id="stroke-theme-select"
+            class="icon-editor__select"
+            [value]="config.stroke || ''"
+            (change)="handleStrokeChange($any($event.target).value)"
+          >
+            <option *ngFor="let theme of availableThemes" [value]="theme">
+              {{ theme }}
+            </option>
+          </select>
+        </div>
+
+        <div class="icon-editor__control-group">
+          <label class="icon-editor__label" for="aria-label-input">Aria Label</label>
+          <input
+            id="aria-label-input"
+            type="text"
+            class="icon-editor__input"
+            [value]="config.ariaLabel || ''"
+            (input)="handleAriaLabelChange($any($event.target).value)"
+            placeholder="Etiqueta de accesibilidad"
+          />
+          <p class="icon-editor__hint" style="font-size: 0.75rem; color: #6b7280; margin-top: 4px;">
+            Texto descriptivo para lectores de pantalla
+          </p>
         </div>
       </div>
     </div>

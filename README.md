@@ -3,7 +3,7 @@
   
   # @weibook/icons-angular
   
-  Librería de iconos para Angular 14.3+ que replica la ergonomía de `mat-icon` añadiendo soporte de primera clase para variantes SVG, temas y animaciones.
+  Librería de iconos para Angular 14.3+ que replica la ergonomía de `mat-icon` añadiendo soporte de primera clase para variantes SVG, temas, animaciones, morphing y personalización avanzada.
 </div>
 
 ---
@@ -15,10 +15,15 @@
 - **Soporte de variantes** (`download`, `download:filled`, `download:outlined`, etc.)
 - **Renderizado inline de SVG** con caché, peticiones HTTP memoizadas y compatibilidad con SSR
 - **Temas y tokens de color** (`primary`, `success`, variables CSS personalizadas)
-- **Catálogo de animaciones reutilizables** (`spin`, `pulse`, `bounce`, `shake`) con hooks de extensibilidad
+- **14 animaciones predefinidas** (`spin`, `pulse`, `bounce`, `shake`, `fade`, `zoom`, `tada`, `float`, `glow`, `tilt`, `flip`, `rubber`, `rotate`) con hooks de extensibilidad
+- **Icon Morphing** - Transiciones suaves entre dos iconos diferentes
+- **Transiciones dinámicas** - Soporte para transiciones suaves en cambios de color, tamaño e icono
+- **Stroke personalizable** - Control de grosor y color del borde de los iconos
+- **Cambios dinámicos** - Soporte completo para bindings condicionales en todas las propiedades
 - **Pipeline de SVG automatizado** (optimización SVGO + generación de manifest)
 - **Compatibilidad con SSR** (Angular Universal)
 - **Accesibilidad** integrada (ARIA, soporte para lectores de pantalla)
+- **Modal de personalización** - Demo interactiva con editor visual completo
 
 ---
 
@@ -151,23 +156,191 @@ Esto crea un scaffold en `icons/outlined/download.svg` con un placeholder y te r
 
 ### Inputs
 
-| Input        | Tipo       | Descripción                                                                                               |
-| ------------ | ---------- | --------------------------------------------------------------------------------------------------------- |
-| `name`       | `string`   | Nombre del icono registrado en el registro (`download`)                                                         |
-| `variant`    | `string`   | Clave de variante (`filled`, `outlined`, `round`, etc.)                                                         |
-| `svgIcon`    | `string`   | Búsqueda estilo namespace (`system:alert`) para conjuntos de iconos                                                     |
-| `animation`  | `string`   | Animación nombrada (`spin`, `pulse`, `bounce`, `shake`) o clase personalizada                                               |
-| `color`      | `string`   | Token de tema (`primary`) o cualquier color/variable CSS                                                        |
-| `size`       | `string`   | Tamaño del icono usando `font-size` (ej: `"2rem"`, `"24px"`)                                                        |
-| `fontSet`    | `string`   | Lista de clases opcional para fallbacks basados en fuente                                                              |
-| `ariaLabel`  | `string`   | Etiqueta accesible. Cuando se omite, el icono se oculta de tecnologías de asistencia                                     |
-| `tabIndex`   | `number`   | Enfoque de teclado opcional. Por defecto es `null`                                                               |
+| Input        | Tipo                | Descripción                                                                                               |
+| ------------ | ------------------- | --------------------------------------------------------------------------------------------------------- |
+| `name`       | `string`            | Nombre del icono registrado en el registro (`download`)                                                         |
+| `variant`    | `string`            | Clave de variante (`filled`, `outlined`, `round`, etc.)                                                         |
+| `svgIcon`    | `string`            | Búsqueda estilo namespace (`system:alert`) para conjuntos de iconos                                                     |
+| `animation`  | `string`            | Animación nombrada (`spin`, `pulse`, `bounce`, `shake`, `fade`, `zoom`, `tada`, `float`, `glow`, `tilt`, `flip`, `rubber`, `rotate`) o clase personalizada                                               |
+| `color`      | `string`            | Token de tema (`primary`) o cualquier color/variable CSS                                                        |
+| `size`       | `string`            | Tamaño del icono usando `font-size` (ej: `"2rem"`, `"24px"`)                                                        |
+| `fontSet`    | `string`            | Lista de clases opcional para fallbacks basados en fuente                                                              |
+| `ariaLabel`  | `string`            | Etiqueta accesible. Cuando se omite, el icono se oculta de tecnologías de asistencia                                     |
+| `tabIndex`   | `number`            | Enfoque de teclado opcional. Por defecto es `null`                                                               |
+| `strokeWidth`| `string \| number`  | Grosor del borde del icono. Puede ser un número (ej: `2`) o string con unidades (ej: `"2px"`, `"0.5em"`) |
+| `stroke`     | `string`            | Color del borde del icono. Puede ser un color directo, variable CSS o nombre de tema |
+| `transition` | `boolean \| string` | Habilita transiciones suaves para cambios dinámicos (color, size, icon). Usa `transition` o `transition="true"` para activar |
+| `from`       | `string`            | Nombre del icono de origen para morphing. Requiere `to` para activar morphing |
+| `to`         | `string`            | Nombre del icono de destino para morphing. Requiere `from` para activar morphing |
+| `active`     | `boolean`           | Controla qué icono se muestra cuando se usa morphing. `true` muestra `to`, `false` muestra `from` |
 
 ### Outputs
 
 | Output       | Tipo     | Se emite cuando                                                                                               |
 | ------------ | -------- | ---------------------------------------------------------------------------------------------------------- |
 | `iconError`  | `Event`  | El icono no puede ser resuelto (error de red, registro faltante, SVG inválido)                            |
+
+---
+
+## 🎭 Icon Morphing
+
+La librería soporta transiciones suaves entre dos iconos diferentes, ideal para estados toggle (play/pause, like/unlike, etc.):
+
+```html
+<!-- Morphing básico -->
+<wb-icon 
+  from="play" 
+  to="pause" 
+  [active]="isPlaying"
+  size="48px"
+  color="primary">
+</wb-icon>
+
+<!-- Con animación durante el morphing -->
+<wb-icon 
+  from="heart" 
+  to="heart-filled" 
+  [active]="isLiked"
+  animation="pulse"
+  transition>
+</wb-icon>
+
+<!-- Cambio dinámico con condicionales -->
+<wb-icon 
+  [from]="iconFrom" 
+  [to]="iconTo" 
+  [active]="isActive"
+  [color]="isActive ? 'primary' : 'gray'"
+  [size]="isActive ? '32px' : '24px'"
+  transition>
+</wb-icon>
+```
+
+**Características del Morphing:**
+- Transición suave de opacidad y transformación entre iconos
+- Soporte para todas las propiedades dinámicas (color, size, animation)
+- Compatible con transiciones CSS
+- Optimizado para rendimiento con OnPush change detection
+
+---
+
+## 🎨 Transiciones Dinámicas
+
+Habilita transiciones suaves para cambios dinámicos en color, tamaño e icono:
+
+```html
+<!-- Transiciones activadas -->
+<wb-icon 
+  name="star" 
+  [color]="isFavorite ? 'warning' : 'gray'"
+  [size]="isFavorite ? '32px' : '24px'"
+  transition>
+</wb-icon>
+
+<!-- Cambio dinámico de icono con transición -->
+<wb-icon 
+  [name]="currentIcon"
+  [color]="iconColor"
+  transition>
+</wb-icon>
+```
+
+**Propiedades que se animan:**
+- `color` - Cambios de color suaves
+- `size` - Cambios de tamaño suaves
+- `fill` y `stroke` - Transiciones de relleno y borde
+- `opacity` y `transform` - Para morphing y animaciones
+
+---
+
+## 🖌️ Stroke Personalizable
+
+Controla el grosor y color del borde de los iconos:
+
+```html
+<!-- Stroke básico -->
+<wb-icon 
+  name="star" 
+  strokeWidth="2"
+  stroke="#000000">
+</wb-icon>
+
+<!-- Stroke con tema -->
+<wb-icon 
+  name="heart" 
+  strokeWidth="1.5"
+  stroke="primary">
+</wb-icon>
+
+<!-- Stroke dinámico -->
+<wb-icon 
+  name="circle" 
+  [strokeWidth]="strokeThickness"
+  [stroke]="strokeColor"
+  transition>
+</wb-icon>
+
+<!-- Stroke con unidades -->
+<wb-icon 
+  name="square" 
+  strokeWidth="0.5em"
+  stroke="var(--my-color)">
+</wb-icon>
+```
+
+**Notas:**
+- `strokeWidth` acepta números o strings con unidades
+- `stroke` puede ser un color directo, variable CSS o nombre de tema
+- Si solo se especifica `strokeWidth`, se usa el color del icono automáticamente
+- Compatible con transiciones cuando `transition` está activo
+
+---
+
+## 🔄 Cambios Dinámicos y Condicionales
+
+Todas las propiedades soportan bindings dinámicos y condicionales:
+
+```html
+<!-- Cambio dinámico de icono -->
+<wb-icon [name]="hidePassword ? 'visibility_off' : 'visibility'"></wb-icon>
+
+<!-- Cambio dinámico de color -->
+<wb-icon 
+  name="favorite" 
+  [color]="isFavorite ? 'warning' : 'gray'">
+</wb-icon>
+
+<!-- Cambio dinámico de animación -->
+<wb-icon 
+  name="loading" 
+  [animation]="isLoading ? 'spin' : undefined">
+</wb-icon>
+
+<!-- Cambio dinámico de tamaño -->
+<wb-icon 
+  name="star" 
+  [size]="isLarge ? '48px' : '24px'"
+  transition>
+</wb-icon>
+
+<!-- Cambio dinámico de stroke -->
+<wb-icon 
+  name="circle" 
+  [strokeWidth]="hasBorder ? '2' : undefined"
+  [stroke]="hasBorder ? 'primary' : undefined">
+</wb-icon>
+
+<!-- Combinación de múltiples cambios dinámicos -->
+<wb-icon 
+  [name]="currentIcon"
+  [color]="iconColor"
+  [size]="iconSize"
+  [animation]="iconAnimation"
+  [strokeWidth]="strokeWidth"
+  [stroke]="strokeColor"
+  [transition]="enableTransitions">
+</wb-icon>
+```
 
 ---
 
@@ -225,21 +398,27 @@ providers: [
 
 La librería incluye los siguientes temas predefinidos:
 
-- **`primary`**: Color primario de la marca
-- **`success`**: Color para acciones exitosas
-- **`warning`**: Color para advertencias
-- **`danger`**: Color para acciones peligrosas
+- **`primary`**: Color primario de la marca (#246BFE)
+- **`secondary`**: Color secundario (#030c1a)
+- **`success`**: Color para acciones exitosas (#2DCE89)
+- **`green`**: Verde (#0B9850)
+- **`warning`**: Color para advertencias (#FF8C42)
+- **`danger`**: Color para acciones peligrosas (#FB6340)
+- **`orange`**: Naranja (#FB6340)
+- **`gray`**, **`gray2`**, **`gray3`**: Escala de grises
+- **`blue`**, **`blue2`**: Azules
+- **`purple`**: Morado (#525f7f)
 - **`muted`**: Color atenuado para elementos secundarios
 
 Los temas integrados exponen variables CSS que puedes personalizar:
 
 ```css
 :root {
-  --wb-icon-primary: #246BFE;
-  --wb-icon-success: #47C0C6;
-  --wb-icon-warning: #FEB315;
-  --wb-icon-danger: #B2168A;
-  --wb-icon-muted: #6B7280;
+  --wb-icon-color-primary: #246BFE;
+  --wb-icon-color-success: #2DCE89;
+  --wb-icon-color-warning: #FF8C42;
+  --wb-icon-color-danger: #FB6340;
+  --wb-icon-color-muted: rgba(107, 114, 128, 1);
 }
 ```
 
@@ -274,18 +453,36 @@ El input `color` también acepta valores directos:
 
 ### Animaciones Predefinidas
 
-La librería incluye las siguientes animaciones:
+La librería incluye **14 animaciones predefinidas**:
 
+#### Animaciones Básicas
 - **`spin`**: Rotación continua (1.2s)
+- **`rotate`**: Rotación inversa continua (1.2s)
 - **`pulse`**: Pulso de escala y opacidad (1.1s)
 - **`bounce`**: Rebote vertical (1.2s)
 - **`shake`**: Sacudida horizontal (0.6s)
+- **`fade`**: Desvanecimiento (1.5s)
+- **`zoom`**: Zoom in/out (1s)
+
+#### Animaciones Avanzadas
+- **`tada`**: Celebración con rotación y escala (1s)
+- **`float`**: Flotación suave (3s)
+- **`glow`**: Resplandor pulsante (2s)
+- **`tilt`**: Inclinación 3D (1s)
+- **`flip`**: Volteo 3D (1s)
+- **`rubber`**: Efecto de goma elástica (1s)
 
 ### Uso de Animaciones
 
 ```html
 <!-- Animación simple -->
 <wb-icon name="download" animation="spin"></wb-icon>
+
+<!-- Animación dinámica con condicionales -->
+<wb-icon 
+  name="loading" 
+  [animation]="isLoading ? 'spin' : undefined">
+</wb-icon>
 
 <!-- Múltiples animaciones (usando clases CSS personalizadas) -->
 <wb-icon name="download" animation="custom-animation"></wb-icon>
@@ -351,6 +548,21 @@ Coloca `<wb-icon-gallery>` en cualquier ruta solo para desarrollo o página de d
 
 ---
 
+## 🎨 Modal de Personalización (Demo)
+
+La demo incluye un modal interactivo completo para personalizar iconos:
+
+- **Preview en tiempo real** - Ve los cambios instantáneamente
+- **Editor visual** - Controla todas las propiedades desde una interfaz amigable
+- **Código generado** - Copia el código Angular listo para usar
+- **Tabs de código** - Vista completa o solo el nombre del icono
+- **Icon Morphing** - Prueba morphing con botón de play/pause
+- **Todas las personalizaciones** - Color, tamaño, animación, stroke, transiciones, etc.
+
+Accede a la modal haciendo clic en cualquier icono en la galería de la demo.
+
+---
+
 ## ♿ Accesibilidad y Seguridad
 
 ### Seguridad
@@ -391,6 +603,11 @@ Coloca `<wb-icon-gallery>` en cualquier ruta solo para desarrollo o página de d
 | Script                  | Propósito                                                       |
 | ----------------------- | ------------------------------------------------------------- |
 | `npm run icons:manifest`| Optimiza SVGs y regenera el manifest de TypeScript          |
+| `npm run icons:cli`     | CLI interactivo para gestión de iconos |
+| `npm run icons:generate`| Genera el manifest de iconos |
+| `npm run icons:validate`| Valida los iconos SVG |
+| `npm run icons:stats`   | Muestra estadísticas de los iconos |
+| `npm run icons:optimize`| Optimiza los SVGs |
 | `npm run build`         | Genera el manifest y construye el paquete Angular               |
 | `npm run lint`          | ESLint sobre fuentes de la librería y scripts de herramientas               |
 | `npm test`              | Suite de pruebas (Karma/Jest)  |
@@ -461,6 +678,46 @@ El output del build se emite a `dist/weibook-icons-angular`. Publica desde esa c
 <wb-icon name="star" size="3rem" ariaLabel="Favorito"></wb-icon>
 ```
 
+### Ejemplo con Icon Morphing
+
+```html
+<wb-icon 
+  from="play" 
+  to="pause" 
+  [active]="isPlaying"
+  size="48px"
+  color="primary"
+  transition
+  ariaLabel="Reproducir/Pausar">
+</wb-icon>
+```
+
+### Ejemplo con Stroke
+
+```html
+<wb-icon 
+  name="star" 
+  strokeWidth="2"
+  stroke="primary"
+  size="32px"
+  ariaLabel="Favorito">
+</wb-icon>
+```
+
+### Ejemplo con Cambios Dinámicos
+
+```html
+<wb-icon 
+  [name]="hidePassword ? 'visibility_off' : 'visibility'"
+  [color]="isFavorite ? 'warning' : 'gray'"
+  [size]="isLarge ? '48px' : '24px'"
+  [animation]="isLoading ? 'spin' : undefined"
+  [strokeWidth]="hasBorder ? '2' : undefined"
+  transition
+  ariaLabel="Icono dinámico">
+</wb-icon>
+```
+
 ### Ejemplo Completo
 
 ```html
@@ -470,6 +727,9 @@ El output del build se emite a `dist/weibook-icons-angular`. Publica desde esa c
   animation="pulse" 
   color="primary" 
   size="2.5rem"
+  strokeWidth="1.5"
+  stroke="primary"
+  transition
   ariaLabel="Descargar archivo"
   [tabIndex]="0"
   (click)="downloadFile()"

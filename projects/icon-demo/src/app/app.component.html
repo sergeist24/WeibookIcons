@@ -50,18 +50,170 @@
           Ajusta tamaño, color, animaciones y texto inline para probar el
           comportamiento del componente.
         </p>
-        <div class="demo-playground__icon">
-          <wb-icon size="4rem" animation="shake" ariaLabel="Descargar con animación">
-            download
-          </wb-icon>
+
+        <div class="demo-playground__section">
+          <h3>Animación Constante</h3>
+          <div class="demo-playground__icon">
+            <wb-icon size="4rem" animation="shake" ariaLabel="Descargar con animación">
+              download
+            </wb-icon>
+          </div>
         </div>
+
+        <div class="demo-playground__section">
+          <h3>Animación Dinámica</h3>
+          <p class="demo-playground__hint">La animación cambia según el estado</p>
+          <div class="demo-playground__icon">
+            <wb-icon 
+              name="star" 
+              size="3rem"
+              color="warning"
+              [animation]="isAnimating ? 'pulse' : ''"
+              (iconClick)="toggleAnimation()"
+              transition
+              [attr.aria-label]="isAnimating ? 'Detener animación' : 'Iniciar animación'"
+            ></wb-icon>
+          </div>
+          <p class="demo-playground__status">
+            Animación: {{ isAnimating ? 'Pulse activa' : 'Sin animación' }}
+          </p>
+        </div>
+
+        <div class="demo-playground__section">
+          <h3>Stroke Dinámico</h3>
+          <p class="demo-playground__hint">Controla el grosor y color del borde (soporta valores menores a 1)</p>
+          <div class="demo-playground__icon">
+            <wb-icon 
+              name="heart" 
+              size="3rem"
+              color="danger"
+              [strokeWidth]="hasThickStroke ? '3' : '0'"
+              [stroke]="hasThickStroke ? 'primary' : 'danger'"
+              (iconClick)="toggleStroke()"
+              transition
+              [attr.aria-label]="'Corazón con stroke dinámico'"
+            ></wb-icon>
+          </div>
+          <p class="demo-playground__status">
+            Stroke: {{ hasThickStroke ? 'Ancho 2, color primary' : 'Ancho 0.5, color danger' }}
+          </p>
+        </div>
+
+
+        <div class="demo-playground__section">
+          <h3>Click con Evento Personalizado</h3>
+          <div class="demo-playground__icon">
+              <wb-icon 
+              name="check" 
+                size="3rem"
+              color="success"
+              (iconClick)="handlePlaygroundClick($event)"
+              [tabIndex]="0"
+              style="cursor: pointer;"
+              ariaLabel="Check con evento personalizado"
+              ></wb-icon>
+          </div>
+          <p class="demo-playground__feedback" *ngIf="clickCount > 0">
+            ¡Clicks: {{ clickCount }}!
+          </p>
+            </div>
+
+        <div class="demo-playground__section">
+          <h3>Color Dinámico + Click Animation</h3>
+          <div class="demo-playground__icon">
+              <wb-icon 
+              name="heart" 
+                size="3rem"
+              [color]="favorite1 ? 'danger' : 'primary'"
+              (iconClick)="toggleFavorite1()"
+              [attr.aria-label]="favorite1 ? 'Quitar de favoritos' : 'Agregar a favoritos'"
+              ></wb-icon>
+          </div>
+          <p class="demo-playground__status">
+            Estado: {{ favorite1 ? 'Favorito ❤️' : 'No favorito' }}
+          </p>
+            </div>
+
+        <div class="demo-playground__section">
+          <h3>Tamaño Dinámico</h3>
+          <div class="demo-playground__icon">
+              <wb-icon 
+                name="star" 
+              [size]="size1"
+                color="warning"
+              (iconClick)="toggleSize1()"
+              [attr.aria-label]="isLarge1 ? 'Hacer pequeño' : 'Hacer grande'"
+              ></wb-icon>
+          </div>
+          <p class="demo-playground__status">
+            Tamaño: {{ size1 }} ({{ isLarge1 ? 'Grande' : 'Pequeño' }})
+          </p>
+            </div>
+
+        <div class="demo-playground__section">
+          <h3>Con Transiciones (transition)</h3>
+          <p class="demo-playground__hint">Los cambios de tamaño y color son suaves</p>
+          <div class="demo-playground__icon">
+              <wb-icon 
+              name="star" 
+              [size]="size2"
+              [color]="favorite2 ? 'gray' : 'warning'"
+              (iconClick)="toggleSize2(); toggleFavorite2()"
+              transition
+              [attr.aria-label]="isLarge2 ? 'Hacer pequeño' : 'Hacer grande'"
+              ></wb-icon>
+          </div>
+          <p class="demo-playground__status">
+            Tamaño: {{ size2 }} | Color: {{ favorite2 ? 'Warning' : 'Gray' }}
+          </p>
+            </div>
+
+        <div class="demo-playground__section">
+          <h3>Todo Dinámico: Tamaño + Color + Icono (Con Transiciones)</h3>
+          <div class="demo-playground__icon">
+            <wb-icon 
+              [name]="favorite3 ? 'heart' : 'star'"
+              [size]="size3"
+              [color]="favorite3 ? 'danger' : 'warning'"
+              (iconClick)="toggleFavorite3(); toggleSize3()"
+              transition
+              [attr.aria-label]="favorite3 ? 'Quitar favorito y cambiar tamaño' : 'Agregar favorito y cambiar tamaño'"
+            ></wb-icon>
+          </div>
+          <p class="demo-playground__status">
+            Icono: {{ favorite3 ? 'Heart' : 'Star' }} | 
+            Tamaño: {{ size3 }} | 
+            Color: {{ favorite3 ? 'Danger' : 'Warning' }}
+          </p>
+        </div>
+
+        <div class="demo-playground__section">
+          <h3>Icon Morphing (Play ↔ Pause)</h3>
+          <p class="demo-playground__hint">Cambio suave entre dos iconos</p>
+          <div class="demo-playground__icon">
+              <wb-icon 
+              from="play"
+              to="pause"
+              [active]="isPlaying"
+              size="4rem"
+              color="primary"
+              (iconClick)="togglePlayPause()"
+              transition
+              [attr.aria-label]="isPlaying ? 'Pausar' : 'Reproducir'"
+              ></wb-icon>
+          </div>
+          <p class="demo-playground__status">
+            Estado: {{ isPlaying ? 'Pausando ⏸️' : 'Reproduciendo ▶️' }}
+          </p>
+            </div>
+
       </section>
     </div>
   </section>
 
-  <app-icon-editor-modal
+  <wb-icon-editor-modal
     [icon]="selectedIcon"
     [isOpen]="isModalOpen"
-    (close)="handleModalClose()"
-  ></app-icon-editor-modal>
+    (modalClose)="handleModalClose()"
+  ></wb-icon-editor-modal>
 </main>
