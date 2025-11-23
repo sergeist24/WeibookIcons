@@ -50,6 +50,9 @@ jobs:
     needs: test
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    permissions:
+      contents: write
+      packages: write
     
     steps:
       - name: Checkout code
@@ -99,6 +102,7 @@ jobs:
 
       - name: Create GitHub Release
         if: steps.check_version.outputs.exists == 'false'
+        continue-on-error: true
         uses: softprops/action-gh-release@v1
         with:
           tag_name: v${{ steps.version.outputs.version }}
