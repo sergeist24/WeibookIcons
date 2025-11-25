@@ -134,7 +134,7 @@ export class IconEditorModalComponent implements OnChanges, OnInit, OnDestroy {
     }
 
     if (this.config.variant && !this.config.useMorphing) {
-      parts.push(`[variant]="${this.config.variant}"`);
+      parts.push(`variant="${this.config.variant}"`);
     }
 
     if (this.config.transition) {

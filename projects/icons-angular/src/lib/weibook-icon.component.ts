@@ -206,6 +206,15 @@ export class WeibookIconComponent
       changes['stroke'] ||
       changes['strokeWidth']
     ) {
+      // Si name cambió a undefined/vacío, limpiar y salir temprano
+      if (changes['name'] && !this.name && !this.svgIcon) {
+        this.clearHostContent();
+        this.iconSubscription?.unsubscribe();
+        this.iconSubscription = undefined;
+        this.cdr.markForCheck();
+        return;
+      }
+
       if (!this.contentInitialized && !this.name && !this.svgIcon) {
         this.pendingRender = true;
         return;
@@ -218,7 +227,12 @@ export class WeibookIconComponent
 
   ngAfterContentInit(): void {
     this.contentInitialized = true;
-    this.scheduleContentRender(true);
+    // Solo programar render si hay name, svgIcon o contenido inline
+    if (this.name || this.svgIcon) {
+      this.renderIcon();
+    } else {
+      this.scheduleContentRender(true);
+    }
   }
 
 
@@ -333,8 +347,14 @@ export class WeibookIconComponent
       return;
     }
 
+    // Validación temprana: si no hay name ni svgIcon, no renderizar
     if (!this.name && !this.svgIcon) {
       this.captureInlineContent();
+      // Si después de capturar contenido inline aún no hay name, limpiar y salir
+      if (!this.inlineName && !this.svgIcon) {
+        this.clearHostContent();
+        return;
+      }
     }
 
     this.iconSubscription?.unsubscribe();
@@ -347,8 +367,9 @@ export class WeibookIconComponent
 
     const iconKey = this.resolveIconKey();
 
-    if (!iconKey) {
-      this.renderFallbackText();
+    if (!iconKey || !iconKey.name) {
+      // No renderizar fallback si name es undefined/vacío para evitar loops
+      this.clearHostContent();
       return;
     }
 

@@ -25,6 +25,9 @@
       />
 </div>
 
+<!--
+
+-->
     <div class="demo-grid">
       <wb-icon-gallery
         title="Todos los íconos"
@@ -44,6 +47,7 @@
         (iconClick)="handleIconClick($event)"
       ></wb-icon-gallery>
 
+      <!--
       <section class="demo-playground">
         <h2>Playground</h2>
         <p>
@@ -207,7 +211,198 @@
           </p>
             </div>
 
+        <div class="demo-playground__section">
+          <h3>Prueba con *ngIf (Simula activeSecondaryMenu)</h3>
+          <p class="demo-playground__hint">Prueba el comportamiento cuando el icono puede ser undefined</p>
+          <div class="demo-playground__icon">
+            <button (click)="toggleSecondaryMenu()" style="margin-bottom: 1rem; padding: 0.5rem 1rem;">
+              {{ activeSecondaryMenu ? 'Ocultar' : 'Mostrar' }} Menú
+            </button>
+            <br>
+            <wb-icon 
+              *ngIf="activeSecondaryMenu" 
+              class="title-icon" 
+              [name]="activeSecondaryMenu?.icon"
+              size="2rem"
+              color="primary"
+            ></wb-icon>
+            <wb-icon 
+              *ngIf="activeSecondaryMenu?.icon" 
+              class="title-icon" 
+              [name]="activeSecondaryMenu?.icon"
+              size="2rem"
+              color="success"
+              style="margin-left: 1rem;"
+            ></wb-icon>
+          </div>
+          <p class="demo-playground__status">
+            Menú activo: {{ activeSecondaryMenu ? 'Sí' : 'No' }} | 
+            Icono: {{ activeSecondaryMenu?.icon || 'undefined' }}
+          </p>
+        </div>
+
+        <div class="demo-playground__section">
+          <h3>Prueba con condiciones booleanas en *ngIf</h3>
+          <p class="demo-playground__hint">Prueba diferentes tipos de condiciones: ===, !variable, etc.</p>
+          <div class="demo-playground__icon">
+            <div style="margin-bottom: 1rem;">
+              <button (click)="toggleTestString()" style="margin-right: 1rem; padding: 0.5rem 1rem;">
+                Toggle String ({{ testString || 'vacío' }})
+              </button>
+              <wb-icon 
+                *ngIf="testString === 'ola'" 
+                name="check-circle"
+                size="2rem"
+                color="success"
+              ></wb-icon>
+              <span style="margin-left: 0.5rem; color: #666;">
+                *ngIf="testString === 'ola'"
+              </span>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <button (click)="toggleTestBoolean()" style="margin-right: 1rem; padding: 0.5rem 1rem;">
+                Toggle Boolean ({{ testBoolean }})
+              </button>
+              <wb-icon 
+                *ngIf="!testBoolean" 
+                name="x-circle"
+                size="2rem"
+                color="danger"
+              ></wb-icon>
+              <span style="margin-left: 0.5rem; color: #666;">
+                *ngIf="!testBoolean"
+              </span>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <button (click)="toggleTestNumber()" style="margin-right: 1rem; padding: 0.5rem 1rem;">
+                Toggle Number ({{ testNumber }})
+              </button>
+              <wb-icon 
+                *ngIf="testNumber === 1" 
+                name="star"
+                size="2rem"
+                color="warning"
+              ></wb-icon>
+              <span style="margin-left: 0.5rem; color: #666;">
+                *ngIf="testNumber === 1"
+              </span>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <wb-icon 
+                *ngIf="testString === 'ola' && !testBoolean" 
+                name="heart"
+                size="2rem"
+                color="primary"
+              ></wb-icon>
+              <span style="margin-left: 0.5rem; color: #666;">
+                *ngIf="testString === 'ola' && !testBoolean"
+              </span>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <wb-icon 
+                *ngIf="activeSecondaryMenu?.icon === 'heart'" 
+                name="heart"
+                size="2rem"
+                color="danger"
+              ></wb-icon>
+              <span style="margin-left: 0.5rem; color: #666;">
+                *ngIf="activeSecondaryMenu?.icon === 'heart'"
+              </span>
+            </div>
+          </div>
+          <p class="demo-playground__status">
+            String: "{{ testString || 'vacío' }}" | 
+            Boolean: {{ testBoolean }} | 
+            Number: {{ testNumber }} |
+            Menú Icon: {{ activeSecondaryMenu?.icon || 'null' }}
+          </p>
+        </div>
+
+        <div class="demo-playground__section">
+          <h3>Prueba con Funciones</h3>
+          <p class="demo-playground__hint">Prueba el comportamiento cuando se pasa una función que devuelve el nombre del icono</p>
+          <div class="demo-playground__icon">
+            <div style="margin-bottom: 1rem;">
+              <button (click)="cycleIcon()" style="margin-right: 1rem; padding: 0.5rem 1rem;">
+                Cambiar Icono ({{ currentIconIndex + 1 }}/{{ iconList.length }})
+              </button>
+              <wb-icon 
+                [name]="getIconName()"
+                [variant]="getIconVariant()"
+                size="2rem"
+                color="primary"
+              ></wb-icon>
+              <span style="margin-left: 0.5rem; color: #666;">
+                [name]="getIconName()" [variant]="getIconVariant()"
+              </span>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <wb-icon 
+                [name]="getIconName()"
+                size="2rem"
+                color="success"
+              ></wb-icon>
+              <span style="margin-left: 0.5rem; color: #666;">
+                [name]="getIconName()"
+              </span>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <button (click)="toggleTestBoolean()" style="margin-right: 1rem; padding: 0.5rem 1rem;">
+                Toggle ({{ testBoolean }})
+              </button>
+              <wb-icon 
+                [name]="getIconNameWithCondition()"
+                size="2rem"
+                color="warning"
+              ></wb-icon>
+              <span style="margin-left: 0.5rem; color: #666;">
+                [name]="getIconNameWithCondition()"
+              </span>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <button (click)="toggleSecondaryMenu()" style="margin-right: 1rem; padding: 0.5rem 1rem;">
+                {{ activeSecondaryMenu ? 'Ocultar' : 'Mostrar' }} Menú
+              </button>
+              <wb-icon 
+                *ngIf="getIconNameFromMenu()"
+                [name]="getIconNameFromMenu()"
+                size="2rem"
+                color="danger"
+              ></wb-icon>
+              <span style="margin-left: 0.5rem; color: #666;">
+                *ngIf="getIconNameFromMenu()" [name]="getIconNameFromMenu()"
+              </span>
+            </div>
+
+            <div style="margin-bottom: 1rem;">
+              <wb-icon 
+                *ngIf="getIconName() === 'heart'"
+                [name]="getIconName()"
+                size="2rem"
+                color="primary"
+              ></wb-icon>
+              <span style="margin-left: 0.5rem; color: #666;">
+                *ngIf="getIconName() === 'heart'"
+              </span>
+            </div>
+          </div>
+          <p class="demo-playground__status">
+            Icono actual: {{ getIconName() }} | 
+            Icono desde función: {{ getIconNameWithCondition() }} |
+            Icono desde menú: {{ getIconNameFromMenu() || 'undefined' }}
+          </p>
+        </div>
+
       </section>
+      -->
+      
     </div>
   </section>
 

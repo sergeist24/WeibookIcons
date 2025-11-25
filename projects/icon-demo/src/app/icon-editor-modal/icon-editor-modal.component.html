@@ -50,18 +50,18 @@
               [attr.aria-label]="config.ariaLabel || icon.name + ' icon preview (morphing)'"
             ></wb-icon>
             <ng-template #normalIcon>
-              <wb-icon
-                [name]="icon.name"
-                [variant]="config.variant"
-                [size]="iconSize"
-                [color]="iconColor"
-                [animation]="config.animation || undefined"
+          <wb-icon
+            [name]="icon.name"
+            [variant]="config.variant"
+            [size]="iconSize"
+            [color]="iconColor"
+            [animation]="config.animation || undefined"
                 [transition]="config.transition"
                 [strokeWidth]="config.strokeWidth"
                 [stroke]="config.stroke && config.strokeColorType !== 'none' ? (config.strokeColorType === 'theme' ? config.stroke : config.stroke) : undefined"
                 [ariaLabel]="config.ariaLabel"
                 [attr.aria-label]="config.ariaLabel || icon.name + ' icon preview'"
-              ></wb-icon>
+          ></wb-icon>
             </ng-template>
             <button
               *ngIf="config.useMorphing && config.morphingFrom && config.morphingTo"

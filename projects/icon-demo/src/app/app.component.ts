@@ -36,6 +36,18 @@ export class AppComponent {
   // Stroke dinámico
   hasThickStroke = false; // Para stroke dinámico
 
+  // Prueba con *ngIf
+  activeSecondaryMenu: { icon?: string } | null = null;
+  
+  // Variables para pruebas con condiciones booleanas
+  testString = '';
+  testBoolean = false;
+  testNumber = 0;
+  
+  // Variables para pruebas con funciones
+  currentIconIndex = 0;
+  iconList = ['heart', 'star', 'settings', 'download', 'upload'];
+
   handleIconClick(event: IconRegistration | Event): void {
     const icon = event as IconRegistration;
     this.selectedIcon = icon;
@@ -49,7 +61,6 @@ export class AppComponent {
 
   handlePlaygroundClick(event: MouseEvent): void {
     this.clickCount++;
-    console.log('Icon clicked!', event);
   }
 
   // Métodos para cada sección independiente
@@ -90,5 +101,60 @@ export class AppComponent {
 
   toggleStroke(): void {
     this.hasThickStroke = !this.hasThickStroke;
+  }
+
+  toggleSecondaryMenu(): void {
+    if (this.activeSecondaryMenu) {
+      this.activeSecondaryMenu.icon = undefined;
+      setTimeout(() => {
+        this.activeSecondaryMenu = null;
+      }, 500);
+    } else {
+      this.activeSecondaryMenu = { icon: 'setting' };
+      setTimeout(() => {
+        if (this.activeSecondaryMenu) {
+          this.activeSecondaryMenu.icon = undefined;
+        }
+      }, 2000);
+      setTimeout(() => {
+        if (this.activeSecondaryMenu) {
+          this.activeSecondaryMenu.icon = 'heart';
+        }
+      }, 4000);
+    }
+  }
+
+  // Métodos para pruebas con condiciones
+  toggleTestString(): void {
+    this.testString = this.testString === 'ola' ? '' : 'ola';
+  }
+
+  toggleTestBoolean(): void {
+    this.testBoolean = !this.testBoolean;
+  }
+
+  toggleTestNumber(): void {
+    this.testNumber = this.testNumber === 0 ? 1 : 0;
+  }
+
+  // Funciones para pruebas con funciones
+  getIconName(): string {
+    return this.iconList[this.currentIconIndex];
+  }
+  
+  getIconVariant(): string {
+    return 'filled';
+  }
+
+  getIconNameWithCondition(): string {
+    return this.testBoolean ? 'heart' : 'star';
+  }
+
+  getIconNameFromMenu(): string | undefined {
+    return this.activeSecondaryMenu?.icon;
+  }
+
+  cycleIcon(): void {
+    this.currentIconIndex = (this.currentIconIndex + 1) % this.iconList.length;
   }
 }

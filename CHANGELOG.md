@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.1] - 2025-11-25
+
+### 🐛 Bug Fixes
+
+- **Corrección de bloqueo con *ngIf**: El componente ahora maneja correctamente cuando `name` es `undefined` o cambia dinámicamente, evitando loops infinitos de detección de cambios
+- **Corrección en código generado**: La variante ahora se genera como atributo estático (`variant="filled"`) en lugar de binding (`[variant]="filled"`) en la modal de personalización
+- **Mejoras en validación**: El componente valida tempranamente cuando `name` es `undefined` y limpia correctamente el contenido
+
+### 🔧 Mejoras
+
+- **Optimización de renderizado**: Mejoras en la detección de cambios para evitar renders innecesarios cuando solo cambian estilos
+- **Mejor manejo de funciones**: El componente ahora maneja correctamente cuando se pasan funciones que devuelven nombres de iconos
+
 ## [0.3.0] - 2025-11-23
 
 ### 🎉 Major Feature Update
