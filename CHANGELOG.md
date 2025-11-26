@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2025-11-26
+
+### 🐛 Bug Fixes
+
+- **Corrección crítica de loops infinitos con *ngIf**: Se corrigió un bug que causaba que la aplicación se congelara o explotara cuando se usaba `*ngIf` con el componente `wb-icon`. El problema estaba en los callbacks de `requestAnimationFrame` que no se cancelaban cuando el componente se destruía.
+  - Se agregó rastreo de todos los `requestAnimationFrame` IDs en un array `rafIds`
+  - Se cancelan todos los `requestAnimationFrame` pendientes en `ngOnDestroy()` usando `cancelAnimationFrame()`
+  - Se agregaron verificaciones de seguridad para asegurar que `elementRef?.nativeElement` exista antes de manipularlo
+  - Esto resuelve el problema cuando se usa `*ngIf` con condiciones dinámicas que cambian rápidamente
+
+### 🔧 Mejoras
+
+- **Mejor manejo de memoria**: Los callbacks de `requestAnimationFrame` ahora se limpian correctamente, evitando memory leaks
+- **Pruebas mejoradas**: Se agregó una prueba en la demo que simula el caso del dashboard component para verificar el fix
+
 ## [0.3.1] - 2025-11-25
 
 ### 🐛 Bug Fixes

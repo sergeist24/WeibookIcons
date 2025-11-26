@@ -153,6 +153,7 @@ export class WeibookIconComponent
   private transitionEnabled = false;
   private morphingSvgs: { from: SVGElement | null; to: SVGElement | null } = { from: null, to: null };
   private morphingSubscriptions: Subscription[] = [];
+  private rafIds: number[] = []; // Track requestAnimationFrame IDs para poder cancelarlos
 
   ngOnChanges(changes: SimpleChanges): void {
     // Detectar si transition está presente (incluso sin valor)
@@ -251,6 +252,9 @@ export class WeibookIconComponent
       clearTimeout(this.scheduledTimeout);
       this.scheduledTimeout = null;
     }
+    // Cancelar todos los requestAnimationFrame pendientes
+    this.rafIds.forEach(id => cancelAnimationFrame(id));
+    this.rafIds = [];
   }
 
   @HostListener('click', ['$event'])
@@ -496,8 +500,14 @@ export class WeibookIconComponent
       return;
     }
 
-    requestAnimationFrame(() => {
-      if (!svg) {
+    const rafId = requestAnimationFrame(() => {
+      // Remover el ID de la lista cuando se ejecute
+      const index = this.rafIds.indexOf(rafId);
+      if (index > -1) {
+        this.rafIds.splice(index, 1);
+      }
+      
+      if (!svg || !this.elementRef?.nativeElement) {
         return;
       }
       const host = this.elementRef.nativeElement;
@@ -507,6 +517,7 @@ export class WeibookIconComponent
         this.setSvgFillAndStroke(svg, computedColor || 'currentColor');
       }
     });
+    this.rafIds.push(rafId);
   }
 
   private updateMorphingVisibility(): void {
@@ -671,20 +682,27 @@ export class WeibookIconComponent
       return;
     }
 
-    requestAnimationFrame(() => {
+    const rafId = requestAnimationFrame(() => {
+      // Remover el ID de la lista cuando se ejecute
+      const index = this.rafIds.indexOf(rafId);
+      if (index > -1) {
+        this.rafIds.splice(index, 1);
+      }
+      
       // Aplicar stroke al icono principal
-      if (this.currentSvg) {
+      if (this.currentSvg && this.elementRef?.nativeElement) {
         this.applyStrokeToSvg(this.currentSvg);
       }
 
       // Aplicar stroke a los iconos de morphing
-      if (this.morphingSvgs.from) {
+      if (this.morphingSvgs.from && this.elementRef?.nativeElement) {
         this.applyStrokeToSvg(this.morphingSvgs.from);
       }
-      if (this.morphingSvgs.to) {
+      if (this.morphingSvgs.to && this.elementRef?.nativeElement) {
         this.applyStrokeToSvg(this.morphingSvgs.to);
       }
     });
+    this.rafIds.push(rafId);
   }
 
   private applyStrokeToSvg(svg: SVGElement): void {
@@ -806,12 +824,19 @@ export class WeibookIconComponent
       return;
     }
 
-    requestAnimationFrame(() => {
-      if (this.currentSvg) {
+    const rafId = requestAnimationFrame(() => {
+      // Remover el ID de la lista cuando se ejecute
+      const index = this.rafIds.indexOf(rafId);
+      if (index > -1) {
+        this.rafIds.splice(index, 1);
+      }
+      
+      if (this.currentSvg && this.elementRef?.nativeElement) {
         const computedColor = this.getComputedColor();
         this.setSvgFillAndStroke(this.currentSvg, computedColor || 'currentColor');
       }
     });
+    this.rafIds.push(rafId);
   }
 
   private getComputedColor(): string | null {

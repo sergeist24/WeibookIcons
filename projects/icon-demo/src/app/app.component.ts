@@ -37,7 +37,10 @@ export class AppComponent {
   hasThickStroke = false; // Para stroke dinámico
 
   // Prueba con *ngIf
-  activeSecondaryMenu: { icon?: string } | null = null;
+  activeSecondaryMenu: { icon?: string; title?: string } | null = null;
+  
+  // Simulación del dashboard component
+  dashboardMenuType: 'reports' | 'sales-reports' | null = null;
   
   // Variables para pruebas con condiciones booleanas
   testString = '';
@@ -156,5 +159,40 @@ export class AppComponent {
 
   cycleIcon(): void {
     this.currentIconIndex = (this.currentIconIndex + 1) % this.iconList.length;
+  }
+
+  // Simulación del dashboard: cambiar entre menús
+  openDashboardMenu(menuType: 'reports' | 'sales-reports'): void {
+    if (this.dashboardMenuType === menuType) {
+      this.dashboardMenuType = null;
+      this.activeSecondaryMenu = null;
+    } else {
+      this.dashboardMenuType = menuType;
+      if (menuType === 'reports') {
+        this.activeSecondaryMenu = { icon: 'history', title: 'History' };
+      } else {
+        this.activeSecondaryMenu = { icon: 'bar-chart', title: 'TitleStats' };
+      }
+    }
+  }
+
+  // Simulación de cambios rápidos (para probar el bug)
+  rapidToggleMenu(): void {
+    let count = 0;
+    const interval = setInterval(() => {
+      if (count % 2 === 0) {
+        this.dashboardMenuType = 'reports';
+        this.activeSecondaryMenu = { icon: 'history', title: 'History' };
+      } else {
+        this.dashboardMenuType = 'sales-reports';
+        this.activeSecondaryMenu = { icon: 'bar-chart', title: 'TitleStats' };
+      }
+      count++;
+      if (count >= 10) {
+        clearInterval(interval);
+        this.dashboardMenuType = null;
+        this.activeSecondaryMenu = null;
+      }
+    }, 100); // Cambio cada 100ms
   }
 }
