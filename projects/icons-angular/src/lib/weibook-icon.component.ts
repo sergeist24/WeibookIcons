@@ -4,10 +4,12 @@ import {
   ChangeDetectorRef,
   Component,
   ElementRef,
+  ErrorHandler,
   EventEmitter,
   HostBinding,
   HostListener,
   Input,
+  NgZone,
   OnChanges,
   OnDestroy,
   Output,
@@ -17,10 +19,12 @@ import {
   AfterContentChecked,
   inject,
 } from '@angular/core';
-import { Subscription } from 'rxjs';
-import { take } from 'rxjs/operators';
+import { Subscription, of, Subject, forkJoin } from 'rxjs';
+import { take, catchError, takeUntil } from 'rxjs/operators';
 import { IconRegistryService } from './icon-registry.service';
 import { IconThemeDefinition } from './icon.types';
+import { SafeDomAdapter } from './utils/safe-dom-adapter';
+import { WB_ICON_DEBUG } from './icon-registry.tokens';
 
 type IconKey = {
   name: string;
@@ -89,6 +93,11 @@ export class WeibookIconComponent
    * When true, shows `to` icon. When false, shows `from` icon.
    */
   @Input() active?: boolean;
+  /**
+   * Duration of morphing transition in milliseconds.
+   * Default is 300ms.
+   */
+  @Input() morphingDuration = 300;
 
   @Output() iconError = new EventEmitter<unknown>();
   @Output() iconClick = new EventEmitter<MouseEvent>();
@@ -130,11 +139,28 @@ export class WeibookIconComponent
     return this.transitionEnabled;
   }
 
-  private readonly registry = inject(IconRegistryService);
-  private readonly renderer = inject(Renderer2);
-  private readonly elementRef = inject(ElementRef<HTMLElement>);
-  private readonly document = inject<Document>(DOCUMENT);
-  private readonly cdr = inject(ChangeDetectorRef);
+  private readonly registry: IconRegistryService;
+  private readonly renderer: Renderer2;
+  private readonly elementRef: ElementRef<HTMLElement>;
+  private readonly document: Document;
+  private readonly cdr: ChangeDetectorRef;
+  private readonly domAdapter: SafeDomAdapter;
+  private readonly errorHandler: ErrorHandler;
+  private readonly ngZone: NgZone;
+  private readonly debug: boolean;
+
+  constructor() {
+    // Usar inject() en el constructor para máxima compatibilidad
+    this.registry = inject(IconRegistryService);
+    this.renderer = inject(Renderer2);
+    this.elementRef = inject(ElementRef<HTMLElement>);
+    this.document = inject<Document>(DOCUMENT);
+    this.cdr = inject(ChangeDetectorRef);
+    this.domAdapter = inject(SafeDomAdapter);
+    this.errorHandler = inject(ErrorHandler);
+    this.ngZone = inject(NgZone);
+    this.debug = inject(WB_ICON_DEBUG, { optional: true }) ?? false;
+  }
 
   private iconSubscription?: Subscription;
   private appliedAnimationClass?: string;
@@ -147,12 +173,13 @@ export class WeibookIconComponent
   private inlineSignature: string | null = null;
   private contentInitialized = false;
   private pendingRender = false;
-  private scheduledContentRender = false;
-  private scheduledTimeout: ReturnType<typeof setTimeout> | null = null;
+  private contentObserver?: MutationObserver;
+  private themeObserver?: MutationObserver;
   private currentSvg?: SVGElement;
   private transitionEnabled = false;
   private morphingSvgs: { from: SVGElement | null; to: SVGElement | null } = { from: null, to: null };
   private morphingSubscriptions: Subscription[] = [];
+  private readonly destroy$ = new Subject<void>();
 
   ngOnChanges(changes: SimpleChanges): void {
     // Detectar si transition está presente (incluso sin valor)
@@ -218,25 +245,41 @@ export class WeibookIconComponent
 
   ngAfterContentInit(): void {
     this.contentInitialized = true;
-    this.scheduleContentRender(true);
+    
+    // Si no hay name ni svgIcon, usar MutationObserver para detectar cambios en contenido inline
+    if (!this.name && !this.svgIcon) {
+      this.setupContentObserver();
+      // Procesar contenido inicial
+      const changed = this.updateInlineSignature(true);
+      if (changed || this.pendingRender) {
+        this.pendingRender = false;
+        this.captureInlineContent();
+        this.renderIcon();
+      }
+    } else if (this.pendingRender) {
+      this.pendingRender = false;
+      this.renderIcon();
+  }
   }
 
-
   ngAfterContentChecked(): void {
-    // IMPORTANTE: ngAfterContentChecked se ejecuta en cada ciclo de detección de cambios
-    // Con OnPush y para evitar loops infinitos, NO procesamos contenido inline aquí
-    // El contenido inline se procesa solo en ngAfterContentInit y cuando hay cambios explícitos
-    // Esto previene loops infinitos de detección de cambios
+    // MutationObserver maneja cambios de contenido inline
+    // No necesitamos procesar aquí para evitar loops infinitos
   }
 
   ngOnDestroy(): void {
+    this.destroy$.next();
+    this.destroy$.complete();
     this.iconSubscription?.unsubscribe();
     this.morphingSubscriptions.forEach(sub => sub.unsubscribe());
     this.morphingSubscriptions = [];
-    if (this.scheduledTimeout) {
-      clearTimeout(this.scheduledTimeout);
-      this.scheduledTimeout = null;
+    if (this.contentObserver) {
+      this.contentObserver.disconnect();
+      this.contentObserver = undefined;
     }
+    // Limpiar referencias de morphing
+    this.morphingSvgs.from = null;
+    this.morphingSvgs.to = null;
   }
 
   @HostListener('click', ['$event'])
@@ -286,45 +329,36 @@ export class WeibookIconComponent
     this.inlineSignature = this.inlineName ?? null;
   }
 
-  private scheduleContentRender(force = false): void {
-    // Evitar loops infinitos: si ya está programado y no es forzado, no hacer nada
-    if (this.scheduledContentRender && !force) {
+  private setupContentObserver(): void {
+    // Solo crear observer si MutationObserver está disponible (browser)
+    if (typeof MutationObserver === 'undefined') {
       return;
     }
 
-    // Limpiar timeout anterior si existe
-    if (this.scheduledTimeout) {
-      clearTimeout(this.scheduledTimeout);
-      this.scheduledTimeout = null;
-    }
-
-    this.scheduledContentRender = true;
-
-    // Usar microtask para evitar loops infinitos
-    Promise.resolve().then(() => {
-      // Verificar que aún necesitamos renderizar
-      if (!this.scheduledContentRender && !force) {
-        return;
-      }
-
-      this.scheduledContentRender = false;
-      this.scheduledTimeout = null;
-
+    this.contentObserver = new MutationObserver(() => {
+      // Ejecutar dentro de NgZone para que Angular detecte los cambios
+      this.ngZone.run(() => {
       // Solo procesar si no hay name ni svgIcon (contenido inline)
       if (this.name || this.svgIcon) {
         return;
       }
 
-      const changed = this.updateInlineSignature(force);
-
-      if (changed || force || this.pendingRender) {
-        this.pendingRender = false;
+        const changed = this.updateInlineSignature(false);
+        if (changed) {
         this.captureInlineContent();
-        // renderIcon() ya llama a markForCheck() internamente, no llamarlo aquí
         this.renderIcon();
       }
     });
+    });
+
+    // Observar cambios en childList y characterData
+    this.contentObserver.observe(this.elementRef.nativeElement, {
+      childList: true,
+      characterData: true,
+      subtree: true,
+    });
   }
+
 
   private renderIcon(): void {
     // Si hay morphing configurado, usar renderMorphing en su lugar
@@ -352,21 +386,52 @@ export class WeibookIconComponent
       return;
     }
 
+    const startTime = this.debug ? performance.now() : 0;
+
     this.iconSubscription = this.registry
       .getNamedSvgIcon(iconKey.name, iconKey.variant)
-      .pipe(take(1))
-      .subscribe({
-        next: (svg) => {
-          this.attachSvgToHost(svg);
-          this.applyColorToSvg();
-          this.applyStroke();
-          this.cdr.markForCheck();
-        },
-        error: (error) => {
-          console.warn(`[wb-icon] Unable to render icon "${iconKey.name}"`, error);
+      .pipe(
+        takeUntil(this.destroy$),
+        take(1),
+        catchError((error) => {
+          const errorMessage = `[wb-icon] Unable to render icon "${iconKey.name}"${iconKey.variant ? ` (variant "${iconKey.variant}")` : ''}`;
+          const errorObj = new Error(errorMessage);
+          (errorObj as any).cause = error;
+          this.errorHandler.handleError(errorObj);
+          
+          if (this.debug) {
+            console.error(`[wb-icon] Error rendering icon:`, {
+              name: iconKey.name,
+              variant: iconKey.variant,
+              error,
+              stack: error instanceof Error ? error.stack : undefined,
+            });
+          }
+          
           this.iconError.emit(error);
           this.renderFallbackText();
           this.cdr.markForCheck();
+          return of(null);
+        })
+      )
+      .subscribe({
+        next: (svg) => {
+          if (svg) {
+            if (this.debug) {
+              const loadTime = performance.now() - startTime;
+              console.log(`[wb-icon] Icon loaded:`, {
+                name: iconKey.name,
+                variant: iconKey.variant,
+                loadTime: `${loadTime.toFixed(2)}ms`,
+              });
+            }
+            
+          this.attachSvgToHost(svg);
+            // Aplicar color (siempre, para asegurar que use currentColor cuando no hay color explícito)
+          this.applyColorToSvg();
+          this.applyStroke();
+          this.cdr.markForCheck();
+          }
         },
       });
   }
@@ -393,75 +458,117 @@ export class WeibookIconComponent
     // Crear contenedor para morphing
     const container = this.renderer.createElement('div');
     this.renderer.addClass(container, 'wb-icon-morph-container');
+    const size = this.size || '1em';
     this.renderer.setStyle(container, 'position', 'relative');
-    this.renderer.setStyle(container, 'width', '100%');
-    this.renderer.setStyle(container, 'height', '100%');
+    this.renderer.setStyle(container, 'width', size);
+    this.renderer.setStyle(container, 'height', size);
+    this.renderer.setStyle(container, 'min-width', size);
+    this.renderer.setStyle(container, 'min-height', size);
     this.renderer.setStyle(container, 'display', 'inline-flex');
     this.renderer.setStyle(container, 'align-items', 'center');
     this.renderer.setStyle(container, 'justify-content', 'center');
+    // Usar CSS custom property para duración de morphing
+    this.renderer.setStyle(container, '--wb-icon-morph-duration', `${this.morphingDuration}ms`);
 
-    // Cargar icono "from"
-    const fromSub = this.registry
+    // Cargar ambos iconos simultáneamente con forkJoin
+    const morphingSub = forkJoin({
+      from: this.registry
       .getNamedSvgIcon(this.from, fromVariant)
-      .pipe(take(1))
+        .pipe(
+          takeUntil(this.destroy$),
+          take(1),
+        catchError((error) => {
+          const errorMessage = `[wb-icon] Unable to load morphing icon "from": "${this.from}"${fromVariant ? ` (variant "${fromVariant}")` : ''}`;
+          const errorObj = new Error(errorMessage);
+          (errorObj as any).cause = error;
+          this.errorHandler.handleError(errorObj);
+          return of(null);
+        })
+        ),
+      to: this.registry
+        .getNamedSvgIcon(this.to, toVariant)
+        .pipe(
+          takeUntil(this.destroy$),
+          take(1),
+        catchError((error) => {
+          const errorMessage = `[wb-icon] Unable to load morphing icon "to": "${this.to}"${toVariant ? ` (variant "${toVariant}")` : ''}`;
+          const errorObj = new Error(errorMessage);
+          (errorObj as any).cause = error;
+          this.errorHandler.handleError(errorObj);
+          return of(null);
+        })
+        ),
+    })
+      .pipe(takeUntil(this.destroy$))
       .subscribe({
-        next: (svg) => {
-          const clonedSvg = svg.cloneNode(true) as SVGElement;
-          this.prepareMorphingSvg(clonedSvg, !isActive);
-          this.renderer.appendChild(container, clonedSvg);
-          this.morphingSvgs.from = clonedSvg;
-          this.applyColorToSvgElement(clonedSvg);
-          this.applyStrokeToSvg(clonedSvg);
+        next: (result) => {
+          if (result.from && result.to) {
+            // Clonar y preparar icono "from"
+            const clonedFromSvg = result.from.cloneNode(true) as SVGElement;
+            this.prepareMorphingSvg(clonedFromSvg, !isActive);
+            this.renderer.appendChild(container, clonedFromSvg);
+            this.morphingSvgs.from = clonedFromSvg;
+            // Aplicar color (siempre, para asegurar que use currentColor cuando no hay color explícito)
+            this.applyColorToSvgElement(clonedFromSvg);
+            this.applyStrokeToSvg(clonedFromSvg);
+
+            // Clonar y preparar icono "to"
+            const clonedToSvg = result.to.cloneNode(true) as SVGElement;
+            this.prepareMorphingSvg(clonedToSvg, isActive);
+            this.renderer.appendChild(container, clonedToSvg);
+            this.morphingSvgs.to = clonedToSvg;
+            // Aplicar color (siempre, para asegurar que use currentColor cuando no hay color explícito)
+            this.applyColorToSvgElement(clonedToSvg);
+            this.applyStrokeToSvg(clonedToSvg);
+
+            this.renderer.appendChild(host, container);
           this.cdr.markForCheck();
+          } else {
+            // Si alguno falló, renderizar fallback
+            const errorObj = new Error(`[wb-icon] Failed to load morphing icons: from="${this.from}", to="${this.to}"`);
+            this.errorHandler.handleError(errorObj);
+            this.renderFallbackText();
+            this.cdr.markForCheck();
+          }
         },
         error: (error) => {
-          console.warn(`[wb-icon] Unable to load morphing icon "from": "${this.from}"`, error);
+          const errorObj = new Error(`[wb-icon] Error loading morphing icons: from="${this.from}", to="${this.to}"`);
+          (errorObj as any).cause = error;
+          this.errorHandler.handleError(errorObj);
+          this.renderFallbackText();
+          this.cdr.markForCheck();
         },
       });
 
-    // Cargar icono "to"
-    const toSub = this.registry
-      .getNamedSvgIcon(this.to, toVariant)
-      .pipe(take(1))
-      .subscribe({
-        next: (svg) => {
-          const clonedSvg = svg.cloneNode(true) as SVGElement;
-          this.prepareMorphingSvg(clonedSvg, isActive);
-          this.renderer.appendChild(container, clonedSvg);
-          this.morphingSvgs.to = clonedSvg;
-          this.applyColorToSvgElement(clonedSvg);
-          this.applyStrokeToSvg(clonedSvg);
-          this.cdr.markForCheck();
-        },
-        error: (error) => {
-          console.warn(`[wb-icon] Unable to load morphing icon "to": "${this.to}"`, error);
-        },
-      });
-
-    this.morphingSubscriptions.push(fromSub, toSub);
-    this.renderer.appendChild(host, container);
+    this.morphingSubscriptions.push(morphingSub);
   }
 
   private prepareMorphingSvg(svg: SVGElement, isVisible: boolean): void {
     svg.setAttribute('preserveAspectRatio', 'xMidYMid meet');
     svg.setAttribute('focusable', 'false');
 
+    // Asegurar que el SVG tenga dimensiones
+    const size = this.size || '1em';
     if (!svg.getAttribute('width')) {
-      svg.setAttribute('width', '1em');
+      svg.setAttribute('width', size);
     }
 
     if (!svg.getAttribute('height')) {
-      svg.setAttribute('height', '1em');
+      svg.setAttribute('height', size);
     }
 
     // Estilos para morphing
     this.renderer.setStyle(svg, 'position', 'absolute');
     this.renderer.setStyle(svg, 'top', '50%');
     this.renderer.setStyle(svg, 'left', '50%');
+    this.renderer.setStyle(svg, 'width', size);
+    this.renderer.setStyle(svg, 'height', size);
     this.renderer.setStyle(svg, 'transform', 'translate(-50%, -50%)');
+    this.renderer.setStyle(svg, 'pointer-events', 'none');
     
-    // Transición suave para morphing
-    this.renderer.setStyle(svg, 'transition', 'opacity 0.3s ease, transform 0.3s ease');
+    // Transición suave para morphing usando CSS custom property
+    const duration = this.morphingDuration;
+    this.renderer.setStyle(svg, 'transition', `opacity ${duration}ms ease, transform ${duration}ms ease`);
     
     // Estado inicial
     this.renderer.setStyle(svg, 'opacity', isVisible ? '1' : '0');
@@ -475,15 +582,25 @@ export class WeibookIconComponent
       return;
     }
 
-    requestAnimationFrame(() => {
+    this.domAdapter.requestAnimationFrame(() => {
       if (!svg) {
         return;
       }
+      
+      // Si hay un color explícito, calcularlo y usarlo
+      if (this.color) {
       const host = this.elementRef.nativeElement;
-      const computedColor = window.getComputedStyle(host).color;
+        const computedStyle = this.domAdapter.getComputedStyle(host);
+        const computedColor = computedStyle?.color;
       
       if (computedColor && computedColor !== 'rgba(0, 0, 0, 0)' && computedColor !== 'transparent') {
-        this.setSvgFillAndStroke(svg, computedColor || 'currentColor');
+          this.setSvgFillAndStroke(svg, computedColor);
+        } else {
+          this.setSvgFillAndStroke(svg, 'currentColor');
+        }
+      } else {
+        // Si no hay color explícito, usar currentColor directamente para que CSS lo maneje
+        this.setSvgFillAndStroke(svg, 'currentColor');
       }
     });
   }
@@ -650,7 +767,7 @@ export class WeibookIconComponent
       return;
     }
 
-    requestAnimationFrame(() => {
+    this.domAdapter.requestAnimationFrame(() => {
       // Aplicar stroke al icono principal
       if (this.currentSvg) {
         this.applyStrokeToSvg(this.currentSvg);
@@ -785,17 +902,28 @@ export class WeibookIconComponent
       return;
     }
 
-    requestAnimationFrame(() => {
+    this.domAdapter.requestAnimationFrame(() => {
       if (this.currentSvg) {
+        // Si hay un color explícito, usarlo
+        if (this.color) {
         const computedColor = this.getComputedColor();
-        this.setSvgFillAndStroke(this.currentSvg, computedColor || 'currentColor');
+          if (computedColor && computedColor !== 'rgba(0, 0, 0, 0)' && computedColor !== 'transparent') {
+            this.setSvgFillAndStroke(this.currentSvg, computedColor);
+          } else {
+            this.setSvgFillAndStroke(this.currentSvg, 'currentColor');
+          }
+        } else {
+          // Si no hay color explícito, asegurar que use currentColor para que CSS lo maneje
+          this.setSvgFillAndStroke(this.currentSvg, 'currentColor');
+        }
       }
     });
   }
 
   private getComputedColor(): string | null {
     const host = this.elementRef.nativeElement;
-    const computedColor = window.getComputedStyle(host).color;
+    const computedStyle = this.domAdapter.getComputedStyle(host);
+    const computedColor = computedStyle?.color;
     
     if (computedColor && computedColor !== 'rgba(0, 0, 0, 0)' && computedColor !== 'transparent') {
       return computedColor;

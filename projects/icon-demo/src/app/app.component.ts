@@ -1,4 +1,4 @@
-import { Component } from '@angular/core';
+import { Component, OnInit } from '@angular/core';
 import { IconRegistration } from '@weibook/icons-angular';
 
 @Component({
@@ -6,12 +6,16 @@ import { IconRegistration } from '@weibook/icons-angular';
   templateUrl: './app.component.html',
   styleUrls: ['./app.component.css'],
 })
-export class AppComponent {
+export class AppComponent implements OnInit {
   title = 'Weibook Icons Demo';
+  libraryVersion = '0.3.4';
   searchQuery = '';
   selectedIcon: IconRegistration | null = null;
   isModalOpen = false;
   clickCount = 0;
+  isDarkMode = true; // Por defecto modo oscuro
+  
+  private readonly THEME_STORAGE_KEY = 'weibook-icons-theme';
   
   // Estados independientes para cada sección de la demo
   favorite1 = false; // Color Dinámico + Click Animation
@@ -36,10 +40,51 @@ export class AppComponent {
   // Stroke dinámico
   hasThickStroke = false; // Para stroke dinámico
 
-  handleIconClick(event: IconRegistration | Event): void {
-    const icon = event as IconRegistration;
-    this.selectedIcon = icon;
+  ngOnInit(): void {
+    // Cargar preferencia del tema desde localStorage
+    this.loadThemeFromStorage();
+    // Inicializar tema al cargar (aplicar inmediatamente)
+    this.applyTheme();
+    // Forzar detección de cambios para asegurar que se aplique
+    setTimeout(() => this.applyTheme(), 0);
+  }
+
+  private loadThemeFromStorage(): void {
+    try {
+      const savedTheme = localStorage.getItem(this.THEME_STORAGE_KEY);
+      if (savedTheme !== null) {
+        this.isDarkMode = savedTheme === 'dark';
+      }
+    } catch (error) {
+      // Si hay error al leer localStorage, usar el valor por defecto
+      console.warn('Error al leer tema del localStorage:', error);
+    }
+  }
+
+  private saveThemeToStorage(): void {
+    try {
+      localStorage.setItem(this.THEME_STORAGE_KEY, this.isDarkMode ? 'dark' : 'light');
+    } catch (error) {
+      console.warn('Error al guardar tema en localStorage:', error);
+    }
+  }
+
+  private applyTheme(): void {
+    // Aplicar al body para estilos globales y para que la modal lo detecte
+    document.body.classList.remove('dark-mode', 'light-mode');
+    if (this.isDarkMode) {
+      document.body.classList.add('dark-mode');
+    } else {
+      document.body.classList.add('light-mode');
+    }
+  }
+
+  handleIconClick(event: IconRegistration | MouseEvent): void {
+    if ('name' in event) {
+      // Es un IconRegistration
+      this.selectedIcon = event as IconRegistration;
     this.isModalOpen = true;
+    }
   }
 
   handleModalClose(): void {
@@ -90,5 +135,11 @@ export class AppComponent {
 
   toggleStroke(): void {
     this.hasThickStroke = !this.hasThickStroke;
+  }
+
+  toggleTheme(): void {
+    this.isDarkMode = !this.isDarkMode;
+    this.saveThemeToStorage();
+    this.applyTheme();
   }
 }

@@ -1,4 +1,4 @@
-<main class="demo-layout">
+<main class="demo-layout" [class.light-mode]="!isDarkMode" [class.dark-mode]="isDarkMode">
   <section class="demo-container">
     <header class="demo-header">
       <h1>{{ title }}</h1>
@@ -9,7 +9,7 @@
       </p>
       <div class="demo-tags">
         <span>Angular 14.3</span>
-        <span>@weibook/icons-angular</span>
+        <span>@weibook/icons-angular v{{ libraryVersion }}</span>
         <span>wb-icon-gallery</span>
       </div>
     </header>
@@ -207,6 +207,24 @@
           </p>
             </div>
 
+        <div class="demo-playground__section">
+          <h3>Hover Personalizado desde CSS</h3>
+          <p class="demo-playground__hint">El icono cambia de color al hacer hover en el botón (estilo desde CSS externo)</p>
+          <div class="demo-playground__icon">
+            <button class="demo-hover-example-btn" type="button">
+              <wb-icon 
+                name="heart" 
+                size="2.5rem"
+                ariaLabel="Corazón con hover personalizado"
+              ></wb-icon>
+              <span class="demo-hover-example-label">Pasa el mouse aquí</span>
+            </button>
+          </div>
+          <p class="demo-playground__status">
+            El color del icono cambia desde CSS: <code>.demo-hover-example-btn:hover wb-icon</code>
+          </p>
+        </div>
+
       </section>
     </div>
   </section>
@@ -214,6 +232,24 @@
   <wb-icon-editor-modal
     [icon]="selectedIcon"
     [isOpen]="isModalOpen"
+    [isDarkMode]="isDarkMode"
     (modalClose)="handleModalClose()"
   ></wb-icon-editor-modal>
+
+  <!-- Botón flotante para cambiar tema -->
+  <button
+    class="theme-toggle-btn"
+    (click)="toggleTheme()"
+    [attr.aria-label]="isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+    [title]="isDarkMode ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'"
+    type="button"
+  >
+    <svg *ngIf="isDarkMode" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <circle cx="12" cy="12" r="5" stroke="currentColor" stroke-width="2"/>
+      <path d="M12 1v3M12 20v3M23 12h-3M4 12H1M20.66 3.34l-2.12 2.12M5.46 18.54l-2.12 2.12M20.66 20.66l-2.12-2.12M5.46 5.46l-2.12-2.12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+    </svg>
+    <svg *ngIf="!isDarkMode" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>
+  </button>
 </main>

@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, EventEmitter, Input, Output, inject, OnInit } from '@angular/core';
 import { IconRegistration } from '../icon.types';
+import { IconRegistryService } from '../icon-registry.service';
 import { WB_ICON_MANIFEST } from '../generated/icon-manifest';
 
 interface GalleryItem extends IconRegistration {
@@ -12,20 +13,41 @@ interface GalleryItem extends IconRegistration {
   styleUrls: ['./icon-gallery.component.css'],
   changeDetection: ChangeDetectionStrategy.OnPush,
 })
-export class IconGalleryComponent {
+export class IconGalleryComponent implements OnInit {
+  private readonly registry = inject(IconRegistryService, { optional: true });
+
   @Input() title = 'Weibook Icons Preview';
   @Input() description = 'A quick visual of the icons registered in the manifest.';
-  @Input() icons: IconRegistration[] = WB_ICON_MANIFEST;
+  @Input() icons?: IconRegistration[];
   @Input() variant?: string;
   @Input() search = '';
   @Output() iconClick = new EventEmitter<IconRegistration>();
 
+  private _displayIcons: IconRegistration[] = [];
+
+  ngOnInit(): void {
+    if (!this.icons) {
+      this._displayIcons = WB_ICON_MANIFEST;
+    } else {
+      this._displayIcons = this.icons;
+    }
+  }
+
+  get displayIcons(): IconRegistration[] {
+    // If icons input changes, update the display icons
+    if (this.icons) {
+      this._displayIcons = this.icons;
+    }
+    return this._displayIcons;
+  }
+
   get displayItems(): GalleryItem[] {
     const normalizedSearch = this.search.trim().toLowerCase();
+    const icons = this.displayIcons;
 
     const filteredByVariant = this.variant
-      ? this.icons.filter((icon) => icon.variant === this.variant)
-      : this.icons;
+      ? icons.filter((icon) => icon.variant === this.variant)
+      : icons;
 
     const filteredBySearch = normalizedSearch
       ? filteredByVariant.filter((icon) => {

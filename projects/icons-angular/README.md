@@ -17,12 +17,14 @@
 - **Temas y tokens de color** (`primary`, `success`, variables CSS personalizadas)
 - **Catálogo de animaciones reutilizables** (`spin`, `pulse`, `bounce`, `shake`) con hooks de extensibilidad
 - **Pipeline de SVG automatizado** (optimización SVGO + generación de manifest)
-- **Compatibilidad con SSR** (Angular Universal)
+- **Compatibilidad completa con SSR** (Angular Universal) - Sin errores de `window` o `document`
 - **Accesibilidad** integrada (ARIA, soporte para lectores de pantalla)
 
 ---
 
 ## 📦 Instalación
+
+### Opción 1: Instalar desde NPM (Producción)
 
 ```bash
 npm install @weibook/icons-angular
@@ -31,6 +33,45 @@ yarn add @weibook/icons-angular
 # o
 pnpm add @weibook/icons-angular
 ```
+
+### Opción 2: Usar en Desarrollo Local (Link Local)
+
+Si estás desarrollando la librería y quieres probarla en otro proyecto Angular:
+
+1. **En el proyecto de la librería** (`WeibookIcons`):
+   ```bash
+   npm run build
+   npm link
+   ```
+
+2. **En tu proyecto Angular** (`ngWeiBook`):
+   ```bash
+   npm link @weibook/icons-angular
+   ```
+
+3. **Configurar path mapping** en `tsconfig.json` de tu proyecto:
+   ```json
+   {
+     "compilerOptions": {
+       "baseUrl": "./",
+       "paths": {
+         "@weibook/icons-angular": [
+           "../WeibookIcons/dist/weibook-icons-angular"
+         ],
+         "@weibook/icons-angular/*": [
+           "../WeibookIcons/dist/weibook-icons-angular/*"
+         ]
+       }
+     }
+   }
+   ```
+
+   > **Nota**: Ajusta la ruta relativa según la ubicación de tu proyecto.
+
+4. **Reiniciar el servidor de desarrollo**:
+   ```bash
+   ng serve
+   ```
 
 ### Requisitos de Peer Dependencies
 
@@ -41,9 +82,26 @@ pnpm add @weibook/icons-angular
 
 ## 🚀 Inicio Rápido
 
-### Configuración con Módulos (Angular 14.3+)
+### Paso 1: Instalar la librería
 
-Registra los iconos y valores por defecto una vez en el bootstrap de tu aplicación:
+```bash
+npm install @weibook/icons-angular
+```
+
+### Paso 2: Reconstruir la librería (si usas desarrollo local)
+
+Si estás usando `npm link` o desarrollo local, asegúrate de reconstruir la librería después de cualquier cambio:
+
+```bash
+cd /ruta/a/WeibookIcons
+npm run build
+```
+
+### Paso 3: Configurar en tu aplicación Angular
+
+#### Opción A: Configuración con Módulos (Angular 14.3+)
+
+1. Importa `WeibookIconModule` y `HttpClientModule` en tu `app.module.ts`:
 
 ```typescript
 import { NgModule } from '@angular/core';
@@ -52,7 +110,7 @@ import { HttpClientModule } from '@angular/common/http';
 import {
   WeibookIconModule,
   provideWeibookIconDefaults,
-  provideWeibookIconManifest,
+  provideWeibookIconManifestLazy,
 } from '@weibook/icons-angular';
 
 @NgModule({
@@ -64,22 +122,24 @@ import {
   providers: [
     // Animaciones y temas por defecto
     ...provideWeibookIconDefaults(),
-    // Registra el manifest generado desde el directorio icons/
-    ...provideWeibookIconManifest(),
+    // Registra el manifest (recomendado: usar lazy para tree shaking)
+    ...provideWeibookIconManifestLazy(['filled', 'outlined']), // O solo ['outlined']
   ],
   bootstrap: [AppComponent],
 })
 export class AppModule {}
 ```
 
-### Configuración Standalone (Angular 15+)
+#### Opción B: Configuración Standalone (Angular 15+)
+
+1. En tu `main.ts` o componente raíz, agrega los providers:
 
 ```typescript
 import { bootstrapApplication } from '@angular/platform-browser';
 import { provideHttpClient } from '@angular/common/http';
 import {
   provideWeibookIconDefaults,
-  provideWeibookIconManifest,
+  provideWeibookIconManifestLazy,
 } from '@weibook/icons-angular';
 import { AppComponent } from './app.component';
 
@@ -87,12 +147,39 @@ bootstrapApplication(AppComponent, {
   providers: [
     provideHttpClient(), // ⚠️ Requerido para cargar SVGs
     ...provideWeibookIconDefaults(),
-    ...provideWeibookIconManifest(),
+    ...provideWeibookIconManifestLazy(['filled', 'outlined']), // O solo ['outlined']
   ],
 });
 ```
 
-### Uso del Componente
+2. Si usas componentes standalone, importa `WeibookIconModule` en cada componente que use iconos:
+
+```typescript
+import { Component } from '@angular/core';
+import { WeibookIconModule } from '@weibook/icons-angular';
+
+@Component({
+  selector: 'app-my-component',
+  standalone: true,
+  imports: [WeibookIconModule], // ⚠️ Importar el módulo
+  template: `
+    <wb-icon name="download" ariaLabel="Descargar"></wb-icon>
+  `,
+})
+export class MyComponent {}
+```
+
+### Paso 3: Verificar que funciona
+
+Agrega un icono de prueba en tu template:
+
+```html
+<wb-icon name="download" variant="filled" ariaLabel="Descargar"></wb-icon>
+```
+
+Si ves el icono renderizado, ¡la configuración es correcta! 🎉
+
+### Paso 4: Usar el Componente
 
 Usa el componente de icono en cualquier parte de tus plantillas:
 
@@ -181,7 +268,37 @@ Esto crea un scaffold en `icons/outlined/download.svg` con un placeholder y te r
    npm run icons:manifest
    ```
 
-3. Proporciona el manifest en tu app: `...provideWeibookIconManifest()`
+3. Proporciona el manifest en tu app:
+
+   **Opción A: Tree Shaking Optimizado (Recomendado) ⭐**
+   
+   Usa `provideWeibookIconManifestLazy()` para cargar solo las variantes que necesitas:
+   
+   ```typescript
+   import { provideWeibookIconManifestLazy } from '@weibook/icons-angular';
+   
+   providers: [
+     // Cargar solo iconos outlined (mejor para bundle size)
+     ...provideWeibookIconManifestLazy(['outlined']),
+     
+     // O cargar ambas variantes
+     ...provideWeibookIconManifestLazy(['filled', 'outlined']),
+   ]
+   ```
+   
+   > **💡 Recomendación**: Usa esta opción para mejor rendimiento y bundle size más pequeño.
+   
+   **Opción B: Manifest Completo (Compatibilidad hacia atrás)**
+   
+   ```typescript
+   import { provideWeibookIconManifest } from '@weibook/icons-angular';
+   
+   providers: [
+     ...provideWeibookIconManifest(), // ⚠️ Importa todos los iconos (no recomendado)
+   ]
+   ```
+   
+   > **⚠️ Nota**: `provideWeibookIconManifest()` está deprecated. Usa `provideWeibookIconManifestLazy()` para mejor tree shaking.
 
 ### 2. Registro Manual
 
@@ -361,6 +478,87 @@ Coloca `<wb-icon-gallery>` en cualquier ruta solo para desarrollo o página de d
 
 ---
 
+## 🖥️ Server-Side Rendering (SSR)
+
+La librería está completamente optimizada para SSR con Angular Universal. Todos los accesos a APIs del navegador (`window`, `document`, `requestAnimationFrame`) están encapsulados de forma segura.
+
+### Configuración SSR
+
+No se requiere configuración adicional. La librería detecta automáticamente el entorno (browser vs server) y usa adaptadores seguros:
+
+```typescript
+// Funciona automáticamente en SSR
+import { provideWeibookIconManifestLazy } from '@weibook/icons-angular';
+
+// En tu app.module.ts o main.ts
+providers: [
+  ...provideWeibookIconManifestLazy(['outlined']),
+]
+```
+
+### Verificación SSR
+
+Para verificar que todo funciona correctamente en SSR:
+
+1. Construye tu app con Angular Universal
+2. Ejecuta el servidor SSR
+3. Verifica que no hay errores de `window is not defined` o `document is not defined`
+
+La librería usa `SafeDomAdapter` internamente para manejar todas las APIs del navegador de forma segura.
+
+---
+
+## 🐛 Debugging
+
+La librería incluye un modo de debug opcional que proporciona información detallada sobre el rendimiento y errores.
+
+### Habilitar Modo Debug
+
+```typescript
+import { WB_ICON_DEBUG } from '@weibook/icons-angular';
+
+providers: [
+  { provide: WB_ICON_DEBUG, useValue: true }, // Habilita logging detallado
+  ...provideWeibookIconManifestLazy(['outlined']),
+]
+```
+
+### Información de Debug
+
+Cuando el modo debug está habilitado, verás en la consola:
+
+- **Tiempo de carga de iconos**: Cuánto tarda cada icono en cargarse
+- **Errores detallados**: Stack traces completos cuando falla la carga de iconos
+- **Estadísticas de caché**: Hits y misses del caché de iconos
+
+### Estadísticas del Registro
+
+Puedes obtener estadísticas del registro de iconos:
+
+```typescript
+import { IconRegistryService } from '@weibook/icons-angular';
+
+constructor(private iconRegistry: IconRegistryService) {}
+
+ngOnInit() {
+  const stats = this.iconRegistry.getStats();
+  if (stats) {
+    console.log('Icon Cache Stats:', stats);
+    // {
+    //   cacheHits: 45,
+    //   cacheMisses: 12,
+    //   totalLoads: 57,
+    //   cachedIcons: 230,
+    //   pendingRequests: 0
+    // }
+  }
+}
+```
+
+> **Nota**: `getStats()` solo retorna datos cuando `WB_ICON_DEBUG` está habilitado.
+
+---
+
 ## ♿ Accesibilidad y Seguridad
 
 ### Seguridad
@@ -404,6 +602,47 @@ Coloca `<wb-icon-gallery>` en cualquier ruta solo para desarrollo o página de d
 | `npm run build`         | Genera el manifest y construye el paquete Angular               |
 | `npm run lint`          | ESLint sobre fuentes de la librería y scripts de herramientas               |
 | `npm test`              | Suite de pruebas (Karma/Jest)  |
+
+---
+
+## 📦 Optimización de Bundle (Tree Shaking)
+
+Para reducir el tamaño del bundle final, usa `provideWeibookIconManifestLazy()` en lugar de `provideWeibookIconManifest()`:
+
+### Comparación de Tamaños
+
+```typescript
+// ❌ Mal: Importa todos los iconos (todos los SVGs en el bundle)
+providers: [
+  ...provideWeibookIconManifest(), // ~230 iconos = bundle grande
+]
+
+// ✅ Bien: Solo carga las variantes que necesitas
+providers: [
+  ...provideWeibookIconManifestLazy(['outlined']), // Solo ~212 iconos outlined
+]
+
+// ✅ Mejor: Carga solo lo que usas
+providers: [
+  ...provideWeibookIconManifestLazy(['filled']), // Solo ~20 iconos filled
+]
+```
+
+### Verificar Tree Shaking
+
+Para verificar que el tree shaking está funcionando:
+
+1. Construye tu aplicación en modo producción
+2. Analiza el bundle con `webpack-bundle-analyzer` o `source-map-explorer`
+3. Verifica que solo se incluyen los iconos de las variantes que especificaste
+
+### Mejores Prácticas
+
+- **Usa variantes específicas**: Si solo usas `outlined`, no cargues `filled`
+- **Registra iconos manualmente**: Para máximo control, registra solo los iconos que usas con `provideWeibookIcons()`
+- **Evita importar el manifest directamente**: No hagas `import { WB_ICON_MANIFEST } from '@weibook/icons-angular'` en tu código
+
+---
 
 El output del build se emite a `dist/weibook-icons-angular`. Publica desde esa carpeta mediante `npm publish`.
 
@@ -507,6 +746,113 @@ El output del build se emite a `dist/weibook-icons-angular`. Publica desde esa c
 - [ ] Paquete compartido `@weibook/icon-core` para futuros bindings de React
 - [ ] Soporte para más variantes de iconos
 - [ ] Más animaciones predefinidas
+
+---
+
+## 🔧 Troubleshooting
+
+### Error: "Can't resolve '@weibook/icons-angular'"
+
+**Problema**: El módulo no se encuentra cuando usas desarrollo local.
+
+**Solución paso a paso**:
+
+1. **Asegúrate de haber compilado la librería**:
+   ```bash
+   cd /Users/mac/Desktop/Weibook/WeibookIcons
+   npm run build
+   ```
+   Esto creará la carpeta `dist/weibook-icons-angular` con los archivos compilados.
+
+2. **Configura el path mapping en `tsconfig.json` de tu proyecto** (`ngWeiBook`):
+   
+   Abre `/Users/mac/Desktop/Weibook/ngWeiBook/tsconfig.json` y agrega/modifica la sección `paths`:
+   
+   ```json
+   {
+     "compilerOptions": {
+       "baseUrl": "./",
+       "paths": {
+         "@weibook/icons-angular": [
+           "../WeibookIcons/dist/weibook-icons-angular"
+         ],
+         "@weibook/icons-angular/*": [
+           "../WeibookIcons/dist/weibook-icons-angular/*"
+         ]
+       }
+     }
+   }
+   ```
+   
+   > **Importante**: 
+   > - Ajusta la ruta relativa `../WeibookIcons` según la ubicación real de tu proyecto
+   > - Si ambos proyectos están en carpetas hermanas, usa `../WeibookIcons`
+   > - Si están en ubicaciones diferentes, usa la ruta absoluta o relativa correcta
+
+3. **Si tu proyecto tiene `tsconfig.app.json`**, también agrega el path allí:
+   
+   Abre `/Users/mac/Desktop/Weibook/ngWeiBook/tsconfig.app.json` y agrega:
+   
+   ```json
+   {
+     "extends": "./tsconfig.json",
+     "compilerOptions": {
+       "paths": {
+         "@weibook/icons-angular": [
+           "../WeibookIcons/dist/weibook-icons-angular"
+         ],
+         "@weibook/icons-angular/*": [
+           "../WeibookIcons/dist/weibook-icons-angular/*"
+         ]
+       }
+     }
+   }
+   ```
+
+4. **Reinicia el servidor de desarrollo**:
+   ```bash
+   # Detén el servidor (Ctrl+C)
+   # Luego reinicia
+   ng serve
+   ```
+
+5. **Si el error persiste**, verifica que:
+   - La carpeta `dist/weibook-icons-angular` existe en el proyecto de la librería
+   - La ruta en `paths` es correcta (puedes usar ruta absoluta para verificar)
+   - El archivo `package.json` existe en `dist/weibook-icons-angular`
+
+### Error: "NG0203: inject() must be called from an injection context"
+
+**Problema**: Error al usar la librería compilada.
+
+**Solución**:
+1. Asegúrate de estar usando la versión más reciente de la librería
+2. Si usas desarrollo local, reconstruye la librería:
+   ```bash
+   cd /ruta/a/WeibookIcons
+   npm run build
+   ```
+3. Limpia el caché de node_modules y reinstala:
+   ```bash
+   rm -rf node_modules package-lock.json
+   npm install
+   ```
+4. Si el problema persiste, verifica que tu proyecto use Angular 14.3 o superior
+
+### Los iconos no se muestran
+
+**Problema**: Los iconos no aparecen en la aplicación.
+
+**Solución**:
+1. Verifica que `HttpClientModule` esté importado (módulos) o `provideHttpClient()` esté en providers (standalone)
+2. Verifica que los providers estén configurados correctamente:
+   ```typescript
+   providers: [
+     ...provideWeibookIconDefaults(),
+     ...provideWeibookIconManifestLazy(['outlined']),
+   ]
+   ```
+3. Abre la consola del navegador para ver errores de carga de SVG
 
 ---
 

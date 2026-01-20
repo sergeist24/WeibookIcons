@@ -12,7 +12,9 @@
     "build": "npm run icons:generate && ng build icons-angular",
     "build:watch": "ng build icons-angular --watch --configuration development",
     "test": "ng test icons-angular",
-    "lint": "ng lint icons-angular"
+    "lint": "ng lint icons-angular",
+    "serve": "ng serve icon-demo",
+    "serve:demo": "ng serve icon-demo"
   },
   "private": true,
   "dependencies": {

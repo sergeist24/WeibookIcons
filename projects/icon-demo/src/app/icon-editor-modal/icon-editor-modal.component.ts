@@ -14,6 +14,7 @@ interface IconEditorConfig {
   morphingFrom?: string;
   morphingTo?: string;
   morphingActive: boolean;
+  morphingDuration: number;
   strokeWidth?: string;
   stroke?: string;
   strokeColorType: 'hex' | 'theme' | 'none';
@@ -28,6 +29,7 @@ interface IconEditorConfig {
 export class IconEditorModalComponent implements OnChanges, OnInit, OnDestroy {
   @Input() icon: IconRegistration | null = null;
   @Input() isOpen = false;
+  @Input() isDarkMode = true; // Agregar input para el tema
   @Output() modalClose = new EventEmitter<void>();
 
   private originalBodyOverflow: string = '';
@@ -45,6 +47,7 @@ export class IconEditorModalComponent implements OnChanges, OnInit, OnDestroy {
     morphingFrom: undefined,
     morphingTo: undefined,
     morphingActive: false,
+    morphingDuration: 300,
     strokeWidth: undefined,
     stroke: undefined,
     strokeColorType: 'none',
@@ -81,7 +84,7 @@ export class IconEditorModalComponent implements OnChanges, OnInit, OnDestroy {
   // Obtener todos los nombres únicos de iconos del manifest
   get availableIconsForMorphing(): string[] {
     const iconNames = new Set<string>();
-    WB_ICON_MANIFEST.forEach(icon => {
+    WB_ICON_MANIFEST.forEach((icon: IconRegistration) => {
       if (icon.name) {
         iconNames.add(icon.name);
       }
@@ -106,15 +109,17 @@ export class IconEditorModalComponent implements OnChanges, OnInit, OnDestroy {
     }
 
     const parts: string[] = ['<wb-icon'];
+    const useProjectedContent = !this.config.useMorphing && !this.config.useNameAttribute;
 
     if (this.config.useMorphing && this.config.morphingFrom && this.config.morphingTo) {
       parts.push(`from="${this.config.morphingFrom}"`);
       parts.push(`to="${this.config.morphingTo}"`);
       parts.push(`[active]="${this.config.morphingActive}"`);
+      if (this.config.morphingDuration !== 300) {
+        parts.push(`[morphingDuration]="${this.config.morphingDuration}"`);
+      }
     } else if (this.config.useNameAttribute) {
-      parts.push(`[name]="${this.icon.name}"`);
-    } else {
-      parts.push(`name="${this.icon.name}"`);
+      parts.push(`[name]="'${this.icon.name}'"`);
     }
 
     if (this.config.size) {
@@ -161,9 +166,12 @@ export class IconEditorModalComponent implements OnChanges, OnInit, OnDestroy {
       parts.push(`ariaLabel="${this.config.ariaLabel}"`);
     }
 
-    parts.push('></wb-icon>');
+    const openTag = parts.join(' ');
+    if (useProjectedContent) {
+      return `${openTag}>${this.icon.name}</wb-icon>`;
+    }
 
-    return parts.join(' ');
+    return `${openTag}></wb-icon>`;
   }
 
   get iconNameCode(): string {
@@ -202,6 +210,7 @@ export class IconEditorModalComponent implements OnChanges, OnInit, OnDestroy {
         morphingFrom: undefined,
         morphingTo: undefined,
         morphingActive: false,
+        morphingDuration: 300,
         strokeWidth: undefined,
         stroke: undefined,
         strokeColorType: 'none',
@@ -327,6 +336,11 @@ export class IconEditorModalComponent implements OnChanges, OnInit, OnDestroy {
 
   handleMorphingActiveChange(value: boolean): void {
     this.config.morphingActive = value;
+  }
+
+  handleMorphingDurationChange(value: string): void {
+    const numValue = parseInt(value, 10);
+    this.config.morphingDuration = isNaN(numValue) || numValue < 0 ? 300 : numValue;
   }
 
   handleStrokeWidthChange(value: string): void {

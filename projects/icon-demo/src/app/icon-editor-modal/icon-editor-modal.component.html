@@ -1,6 +1,8 @@
 <div
   *ngIf="isOpen && icon"
   class="icon-editor__overlay"
+  [class.light-mode]="!isDarkMode"
+  [class.dark-mode]="isDarkMode"
   (click)="handleBackdropClick($event)"
   (keydown)="handleKeyDown($event)"
   tabindex="0"
@@ -8,7 +10,7 @@
   aria-modal="true"
   [attr.aria-label]="'Editor de icono ' + icon.name"
 >
-  <div class="icon-editor__modal" (click)="$event.stopPropagation()">
+  <div class="icon-editor__modal" [class.light-mode]="!isDarkMode" (click)="$event.stopPropagation()">
     <button
       class="icon-editor__close-btn"
       (click)="handleClose()"
@@ -40,6 +42,7 @@
               [from]="config.morphingFrom"
               [to]="config.morphingTo"
               [active]="config.morphingActive"
+              [morphingDuration]="config.morphingDuration"
               [size]="iconSize"
               [color]="config.colorType === 'theme' ? config.color : iconColor"
               [animation]="config.animation || undefined"
@@ -50,8 +53,23 @@
               [attr.aria-label]="config.ariaLabel || icon.name + ' icon preview (morphing)'"
             ></wb-icon>
             <ng-template #normalIcon>
+              <ng-container *ngIf="config.useNameAttribute; else projectedIconContent">
+                <wb-icon
+                  [name]="icon.name"
+                  [variant]="config.variant"
+                  [size]="iconSize"
+                  [color]="iconColor"
+                  [animation]="config.animation || undefined"
+                  [transition]="config.transition"
+                  [strokeWidth]="config.strokeWidth"
+                  [stroke]="config.stroke && config.strokeColorType !== 'none' ? (config.strokeColorType === 'theme' ? config.stroke : config.stroke) : undefined"
+                  [ariaLabel]="config.ariaLabel"
+                  [attr.aria-label]="config.ariaLabel || icon.name + ' icon preview'"
+                ></wb-icon>
+              </ng-container>
+            </ng-template>
+            <ng-template #projectedIconContent>
               <wb-icon
-                [name]="icon.name"
                 [variant]="config.variant"
                 [size]="iconSize"
                 [color]="iconColor"
@@ -61,7 +79,9 @@
                 [stroke]="config.stroke && config.strokeColorType !== 'none' ? (config.strokeColorType === 'theme' ? config.stroke : config.stroke) : undefined"
                 [ariaLabel]="config.ariaLabel"
                 [attr.aria-label]="config.ariaLabel || icon.name + ' icon preview'"
-              ></wb-icon>
+              >
+                {{ icon.name }}
+              </wb-icon>
             </ng-template>
             <button
               *ngIf="config.useMorphing && config.morphingFrom && config.morphingTo"
@@ -305,6 +325,22 @@
             />
             <span>Activo (muestra icono "to")</span>
           </label>
+        </div>
+
+        <div class="icon-editor__control-group" *ngIf="config.useMorphing && config.morphingFrom && config.morphingTo">
+          <label class="icon-editor__label" for="morphing-duration-input">Duración de Morphing (ms)</label>
+          <input
+            id="morphing-duration-input"
+            type="number"
+            class="icon-editor__input"
+            [value]="config.morphingDuration"
+            (input)="handleMorphingDurationChange($any($event.target).value)"
+            min="0"
+            step="50"
+          />
+          <p class="icon-editor__hint" style="font-size: 0.75rem; color: #6b7280; margin-top: 4px;">
+            Duración de la transición entre iconos en milisegundos (por defecto: 300ms)
+          </p>
         </div>
 
         <div class="icon-editor__control-group">

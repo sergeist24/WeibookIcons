@@ -1,11 +1,11 @@
 import { DOCUMENT } from '@angular/common';
 import { HttpClient } from '@angular/common/http';
-import { ENVIRONMENT_INITIALIZER, Inject, Injectable, Optional, SecurityContext, inject } from '@angular/core';
+import { ENVIRONMENT_INITIALIZER, ErrorHandler, Inject, Injectable, Optional, SecurityContext, inject } from '@angular/core';
 import { DomSanitizer, SafeResourceUrl } from '@angular/platform-browser';
 import { Observable, defer, of, throwError } from 'rxjs';
-import { finalize, map, shareReplay, take } from 'rxjs/operators';
+import { finalize, map, shareReplay, take, catchError } from 'rxjs/operators';
 import { IconAlias, IconAnimationDefinition, IconSetRegistration, IconSource, IconThemeDefinition, IconVariant, ProvideWeibookIconsOptions, ProvideWeibookProviders } from './icon.types';
-import { ICON_REGISTRY_CONFIG } from './icon-registry.tokens';
+import { ICON_REGISTRY_CONFIG, WB_ICON_DEBUG } from './icon-registry.tokens';
 
 const VARIANT_SEPARATOR = ':';
 const INTERNAL_VARIANT_SEPARATOR = '::';
@@ -47,6 +47,14 @@ export class IconRegistryService {
   private readonly namespaces = new Set<string>();
 
   private defaultVariant?: IconVariant;
+
+  private readonly errorHandler = inject(ErrorHandler, { optional: true });
+  private readonly debug = inject(WB_ICON_DEBUG, { optional: true }) ?? false;
+
+  // Debug counters (only used when debug is enabled)
+  private iconLoadCount = 0;
+  private iconCacheHits = 0;
+  private iconCacheMisses = 0;
 
   constructor(
     private readonly http: HttpClient,
@@ -161,7 +169,15 @@ export class IconRegistryService {
 
     const cachedSvg = this.svgElementCache.get(resolvedKey);
     if (cachedSvg) {
+      if (this.debug) {
+        this.iconCacheHits++;
+      }
       return of(this.cloneSvg(cachedSvg));
+    }
+
+    if (this.debug) {
+      this.iconCacheMisses++;
+      this.iconLoadCount++;
     }
 
     const config = this.iconConfigs.get(resolvedKey);
@@ -189,6 +205,7 @@ export class IconRegistryService {
     }
 
     return defer(async () => {
+      try {
       for (const config of configs) {
         const svg = await this.getSvgFromSetConfig(config);
         const found = svg.querySelector(`#${iconName}`);
@@ -202,8 +219,18 @@ export class IconRegistryService {
         }
       }
 
-      throw new Error(`Icon "${iconName}" could not be found in namespace "${namespace}".`);
-    });
+        const error = new Error(`Icon "${iconName}" could not be found in namespace "${namespace}".`);
+        this.errorHandler?.handleError(error);
+        throw error;
+      } catch (error) {
+        this.errorHandler?.handleError(error as Error);
+        throw error;
+      }
+    }).pipe(
+      catchError((error) => {
+        return throwError(() => error);
+      })
+    );
   }
 
   private createSvgFromConfig(config: SvgIconConfig): Observable<SVGElement> {
@@ -231,6 +258,17 @@ export class IconRegistryService {
       map((svg) => {
         this.svgElementCache.set(config.key, svg);
         return this.cloneSvg(svg);
+      }),
+      catchError((error) => {
+        const errorMessage = `Failed to fetch icon "${config.key}" from URL: ${sanitizedUrl}`;
+        const errorObj = new Error(errorMessage);
+        (errorObj as any).cause = error;
+        this.errorHandler?.handleError(errorObj);
+        return throwError(() => {
+          const throwErrorObj = new Error(errorMessage);
+          (throwErrorObj as any).cause = error;
+          return throwErrorObj;
+        });
       }),
       finalize(() => this.urlFetchCache.delete(config.key)),
       shareReplay(1),
@@ -341,7 +379,9 @@ export class IconRegistryService {
     const sanitized = this.sanitizer.sanitize(SecurityContext.HTML, this.sanitizer.bypassSecurityTrustHtml(svgContent));
 
     if (!sanitized) {
-      throw new Error('Unable to sanitize SVG content.');
+      const error = new Error('Unable to sanitize SVG content.');
+      this.errorHandler?.handleError(error);
+      throw error;
     }
 
     const container = this.document.createElement('div');
@@ -349,7 +389,9 @@ export class IconRegistryService {
 
     const svg = container.querySelector('svg');
     if (!svg) {
-      throw new Error('Icon content must contain a single <svg> root element.');
+      const error = new Error('Icon content must contain a single <svg> root element.');
+      this.errorHandler?.handleError(error);
+      throw error;
     }
 
     return svg as SVGElement;
@@ -357,6 +399,24 @@ export class IconRegistryService {
 
   private cloneSvg(svg: SVGElement): SVGElement {
     return svg.cloneNode(true) as SVGElement;
+  }
+
+  /**
+   * Get statistics about icon loading and caching (only available in debug mode).
+   * @returns Statistics object with cache hits, misses, and total loads
+   */
+  getStats(): { cacheHits: number; cacheMisses: number; totalLoads: number; cachedIcons: number; pendingRequests: number } | null {
+    if (!this.debug) {
+      return null;
+    }
+
+    return {
+      cacheHits: this.iconCacheHits,
+      cacheMisses: this.iconCacheMisses,
+      totalLoads: this.iconLoadCount,
+      cachedIcons: this.svgElementCache.size,
+      pendingRequests: this.urlFetchCache.size,
+    };
   }
 }
 

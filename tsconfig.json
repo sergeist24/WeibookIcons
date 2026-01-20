@@ -9,10 +9,10 @@
     "noImplicitOverride": true,
     "paths": {
       "@weibook/icons-angular": [
-        "dist/weibook-icons-angular"
+        "projects/icons-angular/src/public-api.ts"
       ],
       "@weibook/icons-angular/*": [
-        "dist/weibook-icons-angular/*"
+        "projects/icons-angular/src/lib/*"
       ]
     },
     "noPropertyAccessFromIndexSignature": true,
