@@ -9,12 +9,28 @@
     "icons:validate": "node tools/cli.mjs validate",
     "icons:stats": "node tools/cli.mjs stats",
     "icons:optimize": "node tools/cli.mjs optimize",
-    "build": "npm run icons:generate && ng build icons-angular",
+    "build:core": "npm run --prefix projects/icon-core build",
+    "react:manifest": "node tools/generate-react-manifest.mjs",
+    "build:react": "npm run build:core && npm run react:manifest && npm run --prefix projects/icons-react build",
+    "build:angular": "npm run icons:generate && ng build icons-angular",
+    "build": "npm run icons:generate && ng build icons-angular && npm run build:react",
+    "publish:core": "npm run --prefix projects/icon-core build && npm publish --access public --prefix projects/icon-core",
+    "publish:react": "npm run build:react && npm publish --access public --prefix projects/icons-react",
+    "publish:angular": "npm run build:angular && npm publish --access public --prefix dist/weibook-icons-angular",
+    "publish:all": "npm run publish:core && npm run publish:react && npm run publish:angular",
+    "changeset": "changeset",
+    "version:packages": "changeset version",
+    "release:packages": "changeset publish",
+    "release:ci": "npm run build && changeset publish && node tools/publish-angular-if-needed.mjs",
     "build:watch": "ng build icons-angular --watch --configuration development",
     "test": "ng test icons-angular",
     "lint": "ng lint icons-angular"
   },
   "private": true,
+  "workspaces": [
+    "projects/icon-core",
+    "projects/icons-react"
+  ],
   "dependencies": {
     "@angular/animations": "^14.2.0",
     "@angular/common": "^14.2.0",
@@ -36,7 +52,9 @@
     "@angular-eslint/template-parser": "^14.1.2",
     "@angular/cli": "~14.2.13",
     "@angular/compiler-cli": "^14.2.0",
+    "@changesets/cli": "^2.29.7",
     "@types/jasmine": "~4.0.0",
+    "@types/react": "^18.3.12",
     "@types/node": "^16.18.11",
     "@typescript-eslint/eslint-plugin": "^5.38.1",
     "@typescript-eslint/parser": "^5.38.1",
@@ -49,6 +67,7 @@
     "karma-jasmine-html-reporter": "~2.0.0",
     "ng-packagr": "^14.2.0",
     "svgo": "^4.0.0",
+    "tsup": "^8.5.0",
     "typescript": "~4.7.2"
   }
 }

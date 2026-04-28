@@ -1,11 +1,17 @@
 import { Provider } from '@angular/core';
+import {
+  IconAnimationConfig as CoreIconAnimationConfig,
+  IconAnimationDefinition as CoreIconAnimationDefinition,
+  IconRegistration as CoreIconRegistration,
+  IconSource as CoreIconSource,
+  IconThemeConfig as CoreIconThemeConfig,
+  IconThemeDefinition as CoreIconThemeDefinition,
+  IconVariant as CoreIconVariant,
+} from '@weibook/icon-core';
 
-export type IconVariant = string;
+export type IconVariant = CoreIconVariant;
 
-export interface IconRegistration {
-  name: string;
-  source: IconSource;
-  variant?: IconVariant;
+export interface IconRegistration extends CoreIconRegistration {
   aliases?: string[];
 }
 
@@ -20,32 +26,17 @@ export interface IconSetRegistration {
   source: IconSource;
 }
 
-export type IconSource = IconUrlSource | IconSvgSource;
+export type IconSource = CoreIconSource;
 
-export interface IconUrlSource {
-  url: string;
-}
-
-export interface IconSvgSource {
-  svgText: string;
-}
-
-export interface IconThemeDefinition {
+export interface IconThemeDefinition extends CoreIconThemeDefinition {
   className?: string;
-  cssVariable?: string;
-  color?: string;
-  inlineStyles?: Record<string, string>;
 }
 
-export type IconThemeConfig = Record<string, IconThemeDefinition>;
+export type IconThemeConfig = CoreIconThemeConfig & Record<string, IconThemeDefinition>;
 
-export interface IconAnimationDefinition {
-  className: string;
-  inlineStyles?: Record<string, string>;
-  keyframes?: string;
-}
+export type IconAnimationDefinition = CoreIconAnimationDefinition;
 
-export type IconAnimationConfig = Record<string, IconAnimationDefinition>;
+export type IconAnimationConfig = CoreIconAnimationConfig;
 
 export interface ProvideWeibookIconsOptions {
   defaultVariant?: IconVariant;

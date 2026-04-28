@@ -8,6 +8,12 @@
     "strict": true,
     "noImplicitOverride": true,
     "paths": {
+      "@weibook/icon-core": [
+        "projects/icon-core/dist"
+      ],
+      "@weibook/icon-core/*": [
+        "projects/icon-core/dist/*"
+      ],
       "@weibook/icons-angular": [
         "dist/weibook-icons-angular"
       ],

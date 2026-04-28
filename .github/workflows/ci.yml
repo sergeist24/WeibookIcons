@@ -5,11 +5,16 @@ on:
     branches:
       - main
     paths:
+      - 'projects/icon-core/**'
+      - 'projects/icons-react/**'
       - 'projects/icons-angular/**'
       - 'tools/**'
       - 'icons/**'
       - 'package.json'
       - 'package-lock.json'
+      - '.github/workflows/ci.yml'
+      - '.github/workflows/ci-cd.yml'
+      - '.github/workflows/release.yml'
 
 jobs:
   test:

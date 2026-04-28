@@ -1,0 +1,27 @@
+{
+  "name": "@weibook/icons-react",
+  "version": "0.1.0",
+  "description": "Weibook icon components for React applications.",
+  "license": "MIT",
+  "sideEffects": false,
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "prepublishOnly": "cd ../.. && npm run build:react"
+  },
+  "dependencies": {
+    "@weibook/icon-core": "^0.1.0"
+  },
+  "peerDependencies": {
+    "react": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -37,6 +37,16 @@ yarn add @weibook/icons-angular
 pnpm add @weibook/icons-angular
 ```
 
+### React (nuevo paquete)
+
+```bash
+npm install @weibook/icons-react
+# o
+yarn add @weibook/icons-react
+# o
+pnpm add @weibook/icons-react
+```
+
 ### Requisitos de Peer Dependencies
 
 - Angular `>=14.3.0`
@@ -128,6 +138,28 @@ Usa el componente de icono en cualquier parte de tus plantillas:
   size="3rem"
   ariaLabel="Descarga completada">
 </wb-icon>
+```
+
+### Uso en React
+
+Para React, usa el provider para registrar el manifest y luego renderiza `WbIcon`:
+
+```tsx
+import { WeibookIconsProvider, WbIcon, WB_ICON_MANIFEST } from '@weibook/icons-react';
+
+export function App() {
+  return (
+    <WeibookIconsProvider
+      config={{
+        defaultVariant: 'outlined',
+        icons: WB_ICON_MANIFEST,
+      }}
+    >
+      <WbIcon name="download" variant="filled" color="primary" size="28px" ariaLabel="Descargar" />
+      <WbIcon name="loading" animation="spin" color="warning" ariaLabel="Cargando" />
+    </WeibookIconsProvider>
+  );
+}
 ```
 
 ---
@@ -608,11 +640,19 @@ Accede a la modal haciendo clic en cualquier icono en la galería de la demo.
 | `npm run icons:validate`| Valida los iconos SVG |
 | `npm run icons:stats`   | Muestra estadísticas de los iconos |
 | `npm run icons:optimize`| Optimiza los SVGs |
+| `npm run build:core`    | Compila `@weibook/icon-core` |
+| `npm run build:angular` | Compila `@weibook/icons-angular` |
 | `npm run build`         | Genera el manifest y construye el paquete Angular               |
+| `npm run react:manifest`| Genera el manifest TypeScript para el paquete de React |
+| `npm run build:react`   | Genera el manifest y compila `@weibook/icons-react` |
+| `npm run publish:core`  | Publica `@weibook/icon-core` en npm |
+| `npm run publish:react` | Publica `@weibook/icons-react` en npm |
+| `npm run publish:angular` | Publica `@weibook/icons-angular` en npm |
+| `npm run publish:all`   | Publica core -> react -> angular en orden |
 | `npm run lint`          | ESLint sobre fuentes de la librería y scripts de herramientas               |
 | `npm test`              | Suite de pruebas (Karma/Jest)  |
 
-El output del build se emite a `dist/weibook-icons-angular`. Publica desde esa carpeta mediante `npm publish`.
+El output del build Angular se emite a `dist/weibook-icons-angular`.
 
 ---
 
@@ -752,9 +792,84 @@ El output del build se emite a `dist/weibook-icons-angular`. Publica desde esa c
 
 - [ ] Pruebas headless basadas en Jest para comportamiento de registro/componente
 - [ ] Storybook con controles interactivos y CI de accesibilidad con axe
-- [ ] Paquete compartido `@weibook/icon-core` para futuros bindings de React
+- [x] Paquete compartido `@weibook/icon-core` para bindings de React
 - [ ] Soporte para más variantes de iconos
 - [ ] Más animaciones predefinidas
+
+---
+
+## 🚢 Publicación Multi-Paquete
+
+Para publicar los tres paquetes en npm sin romper dependencias, usa este orden:
+
+1. `@weibook/icon-core`
+2. `@weibook/icons-react` (depende de `icon-core`)
+3. `@weibook/icons-angular` (peer de `icon-core`)
+
+Comandos disponibles:
+
+```bash
+# Publicación secuencial completa
+npm run publish:all
+
+# O por paquete
+npm run publish:core
+npm run publish:react
+npm run publish:angular
+```
+
+Recomendación antes de publicar:
+
+```bash
+npm run build
+npm run test -- --watch=false --browsers=ChromeHeadless
+```
+
+---
+
+## 🏷️ Versionado con Changesets
+
+El repo está listo para versionado multi-paquete con [Changesets](https://github.com/changesets/changesets).
+
+### Paquetes y workspaces
+
+Los **workspaces de npm** solo incluyen `@weibook/icon-core` y `@weibook/icons-react`; Changesets puede versionarlos automáticamente a partir de archivos `.changeset/*.md`.
+
+`@weibook/icons-angular` se construye en `dist/weibook-icons-angular/` con ng-packagr, por tanto **su versión** se indica manualmente editando `projects/icons-angular/package.json` cuando haya que publicar un release de ese paquete (anótalo también en CHANGELOG cuando toque).
+
+### Flujo recomendado (local)
+
+```bash
+# 1) Describir el cambio (core / react)
+npm run changeset
+
+# 2) (Opcional) Si publicas Angular en este ciclo: sube semver en projects/icons-angular/package.json también
+
+# 3) Bump de versiones + changelogs (o abre PR y lo hace CI)
+npm run version:packages
+```
+
+Para publicación local tras build:
+
+```bash
+npm run release:ci
+```
+
+Eso ejecuta `npm run build`, `changeset publish` sobre los workspaces registrados y, al final, `tools/publish-angular-if-needed.mjs` intenta publicar Angular solo si esa versión aún no existe en npm.
+
+### GitHub Actions — Release
+
+El workflow [`.github/workflows/release.yml`](/.github/workflows/release.yml) en `push` a `main` usa `changesets/action` para:
+
+- crear/actualizar el PR **«Version Packages»**, o bien
+- ejecutar **`npm run release:ci`** y publicar a npm cuando el merge aplique bumps.
+
+Requiere el secret **`NPM_TOKEN`** con permiso de publicación en npm.
+
+Dependencias típicas:
+
+- `@weibook/icons-react` depende por semver de `@weibook/icon-core`.
+- `@weibook/icons-angular` declara `@weibook/icon-core` como peer dependency.
 
 ---
 
