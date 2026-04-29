@@ -1,64 +1,9 @@
 import { provideWeibookIcons } from './icon-registry.service';
 import { IconAnimationConfig, IconThemeConfig, ProvideWeibookProviders } from './icon.types';
-
-const ROTATE_KEYFRAMES = `
-@keyframes wb-icon-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-`;
-
-const PULSE_KEYFRAMES = `
-@keyframes wb-icon-pulse {
-  0% {
-    transform: scale(1);
-    opacity: 1;
-  }
-  50% {
-    transform: scale(0.92);
-    opacity: 0.75;
-  }
-  100% {
-    transform: scale(1);
-    opacity: 1;
-  }
-}
-`;
-
-const BOUNCE_KEYFRAMES = `
-@keyframes wb-icon-bounce {
-  0%, 100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-20%);
-  }
-}
-`;
-
-const SHAKE_KEYFRAMES = `
-@keyframes wb-icon-shake {
-  0%, 100% {
-    transform: translateX(0);
-  }
-  20% {
-    transform: translateX(-12%);
-  }
-  40% {
-    transform: translateX(10%);
-  }
-  60% {
-    transform: translateX(-8%);
-  }
-  80% {
-    transform: translateX(6%);
-  }
-}
-`;
+import {
+  WB_ICON_ANIMATIONS as CORE_ICON_ANIMATIONS,
+  WB_ICON_THEMES as CORE_ICON_THEMES,
+} from '@weibook/icon-core';
 
 const FADE_KEYFRAMES = `
 @keyframes wb-icon-fade {
@@ -194,17 +139,38 @@ const RUBBER_KEYFRAMES = `
 }
 `;
 
+const toKebabCase = (value: string): string => value.replace(/[A-Z]/g, (letter) => `-${letter.toLowerCase()}`);
 
-export const WB_ICON_ANIMATIONS: IconAnimationConfig = {
-  // Animaciones básicas comunes
-  spin: {
-    className: 'wb-icon--spin',
-    inlineStyles: {
-      animation: 'wb-icon-spin 1.2s linear infinite',
-      'transform-origin': 'center',
-    },
-    keyframes: ROTATE_KEYFRAMES,
-  },
+const normalizeInlineStyles = (styles?: Record<string, string>): Record<string, string> | undefined => {
+  if (!styles) {
+    return undefined;
+  }
+
+  return Object.entries(styles).reduce<Record<string, string>>((acc, [key, value]) => {
+    acc[toKebabCase(key)] = value;
+    return acc;
+  }, {});
+};
+
+const normalizeAnimationConfig = (config: IconAnimationConfig): IconAnimationConfig =>
+  Object.entries(config).reduce<IconAnimationConfig>((acc, [name, definition]) => {
+    acc[name] = {
+      ...definition,
+      inlineStyles: normalizeInlineStyles(definition.inlineStyles),
+    };
+    return acc;
+  }, {});
+
+const normalizeThemeConfig = (config: IconThemeConfig): IconThemeConfig =>
+  Object.entries(config).reduce<IconThemeConfig>((acc, [name, definition]) => {
+    acc[name] = {
+      ...definition,
+      inlineStyles: normalizeInlineStyles(definition.inlineStyles),
+    };
+    return acc;
+  }, {});
+
+const ANGULAR_ONLY_ANIMATIONS: IconAnimationConfig = {
   rotate: {
     className: 'wb-icon--rotate',
     inlineStyles: {
@@ -212,30 +178,6 @@ export const WB_ICON_ANIMATIONS: IconAnimationConfig = {
       'transform-origin': 'center',
     },
     keyframes: ROTATE_KEYFRAMES_REVERSE,
-  },
-  pulse: {
-    className: 'wb-icon--pulse',
-    inlineStyles: {
-      animation: 'wb-icon-pulse 1.1s ease-in-out infinite',
-      'transform-origin': 'center',
-    },
-    keyframes: PULSE_KEYFRAMES,
-  },
-  bounce: {
-    className: 'wb-icon--bounce',
-    inlineStyles: {
-      animation: 'wb-icon-bounce 1.2s ease-in-out infinite',
-      display: 'inline-flex',
-    },
-    keyframes: BOUNCE_KEYFRAMES,
-  },
-  shake: {
-    className: 'wb-icon--shake',
-    inlineStyles: {
-      animation: 'wb-icon-shake 0.6s ease-in-out 0s infinite',
-      'transform-origin': 'center',
-    },
-    keyframes: SHAKE_KEYFRAMES,
   },
   fade: {
     className: 'wb-icon--fade',
@@ -252,7 +194,6 @@ export const WB_ICON_ANIMATIONS: IconAnimationConfig = {
     },
     keyframes: ZOOM_KEYFRAMES,
   },
-  // Animaciones de librerías populares (Font Awesome, etc.)
   tada: {
     className: 'wb-icon--tada',
     inlineStyles: {
@@ -261,7 +202,6 @@ export const WB_ICON_ANIMATIONS: IconAnimationConfig = {
     },
     keyframes: TADA_KEYFRAMES,
   },
-  // Animaciones únicas pero útiles
   float: {
     className: 'wb-icon--float',
     inlineStyles: {
@@ -302,53 +242,17 @@ export const WB_ICON_ANIMATIONS: IconAnimationConfig = {
   },
 };
 
-export const WB_ICON_THEMES: IconThemeConfig = {
-  primary: {
-    cssVariable: '--wb-icon-color-primary',
-    inlineStyles: {
-      '--wb-icon-color-primary': 'var(--wb-color-primary, #246BFE)',
-    },
-  },
-  secondary: {
-    cssVariable: '--wb-icon-color-secondary',
-    inlineStyles: {
-      '--wb-icon-color-secondary': 'var(--wb-color-secondary, #030c1a)',
-    },
-  },
-  success: {
-    cssVariable: '--wb-icon-color-success',
-    inlineStyles: {
-      '--wb-icon-color-success': 'var(--wb-color-success, #2DCE89)',
-    },
-  },
+const ANGULAR_ONLY_THEMES: IconThemeConfig = {
   green: {
     cssVariable: '--wb-icon-color-green',
     inlineStyles: {
       '--wb-icon-color-green': 'var(--wb-color-green, #0B9850)',
     },
   },
-  warning: {
-    cssVariable: '--wb-icon-color-warning',
-    inlineStyles: {
-      '--wb-icon-color-warning': 'var(--wb-color-warning, #FF8C42)',
-    },
-  },
-  danger: {
-    cssVariable: '--wb-icon-color-danger',
-    inlineStyles: {
-      '--wb-icon-color-danger': 'var(--wb-color-danger, #FB6340)',
-    },
-  },
   orange: {
     cssVariable: '--wb-icon-color-orange',
     inlineStyles: {
       '--wb-icon-color-orange': 'var(--wb-color-orange, #FB6340)',
-    },
-  },
-  gray: {
-    cssVariable: '--wb-icon-color-gray',
-    inlineStyles: {
-      '--wb-icon-color-gray': 'var(--wb-color-gray, #828286)',
     },
   },
   gray2: {
@@ -381,9 +285,16 @@ export const WB_ICON_THEMES: IconThemeConfig = {
       '--wb-icon-color-purple': 'var(--wb-color-purple, #525f7f)',
     },
   },
-  muted: {
-    color: 'var(--wb-icon-color-muted, rgba(107, 114, 128, 1))',
-  },
+};
+
+export const WB_ICON_ANIMATIONS: IconAnimationConfig = {
+  ...normalizeAnimationConfig(CORE_ICON_ANIMATIONS),
+  ...ANGULAR_ONLY_ANIMATIONS,
+};
+
+export const WB_ICON_THEMES: IconThemeConfig = {
+  ...normalizeThemeConfig(CORE_ICON_THEMES),
+  ...ANGULAR_ONLY_THEMES,
 };
 
 export const provideWeibookIconDefaults = (): ProvideWeibookProviders =>

@@ -1,16 +1,19 @@
-name: CI/CD - Test, Build & Publish to NPM
+name: CI/CD - Test & Build
 
 on:
   push:
     branches:
       - main
     paths:
+      - 'projects/icon-core/**'
+      - 'projects/icons-react/**'
       - 'projects/icons-angular/**'
       - 'tools/**'
       - 'icons/**'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/ci-cd.yml'
+      - '.github/workflows/release.yml'
   workflow_dispatch: # Permite ejecución manual
 
 jobs:
@@ -45,76 +48,4 @@ jobs:
       - name: Build library
         run: npm run build
 
-  publish:
-    name: Publish to NPM
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    permissions:
-      contents: write
-      packages: write
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '18'
-          registry-url: 'https://registry.npmjs.org'
-          cache: 'npm'
-
-      - name: Install dependencies
-        run: npm ci
-
-      - name: Generate icon manifest
-        run: npm run icons:generate
-
-      - name: Build library
-        run: npm run build
-
-      - name: Extract version
-        id: version
-        run: |
-          VERSION=$(node -p "require('./projects/icons-angular/package.json').version")
-          echo "version=$VERSION" >> $GITHUB_OUTPUT
-          echo "Library version: $VERSION"
-
-      - name: Check if version exists in NPM
-        id: check_version
-        run: |
-          VERSION="${{ steps.version.outputs.version }}"
-          if npm view @weibook/icons-angular@$VERSION version > /dev/null 2>&1; then
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "Version $VERSION already exists in NPM. Skipping publish."
-          else
-            echo "exists=false" >> $GITHUB_OUTPUT
-            echo "Version $VERSION is new. Will publish."
-          fi
-
-      - name: Publish to NPM
-        if: steps.check_version.outputs.exists == 'false'
-        working-directory: ./dist/weibook-icons-angular
-        run: npm publish --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
-
-      - name: Create GitHub Release
-        if: steps.check_version.outputs.exists == 'false'
-        continue-on-error: true
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: v${{ steps.version.outputs.version }}
-          name: Release v${{ steps.version.outputs.version }}
-          body: |
-            ## 🎉 Release v${{ steps.version.outputs.version }}
-            
-            Published to NPM: https://www.npmjs.com/package/@weibook/icons-angular/v/${{ steps.version.outputs.version }}
-            
-            See [CHANGELOG.md](https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md) for details.
-          draft: false
-          prerelease: false
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
+  # La publicación a npm se hace mediante `.github/workflows/release.yml` + Changesets.
