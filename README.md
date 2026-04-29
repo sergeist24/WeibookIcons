@@ -27,6 +27,29 @@
 
 ---
 
+## 📌 Estado actual del proyecto
+
+Este repositorio ya fue adaptado para funcionar en dos frameworks:
+
+- `@weibook/icons-angular` (paquete Angular existente, actualizado para compartir base con core).
+- `@weibook/icons-react` (nuevo paquete React con `WeibookIconsProvider` y `WbIcon`).
+- `@weibook/icon-core` (nuevo paquete compartido con tipos, presets y lógica base).
+
+Cambios relevantes implementados:
+
+- Arquitectura multi-paquete con core compartido.
+- Generación de manifest React desde el mismo origen de iconos (`tools/generate-react-manifest.mjs`).
+- Scripts de build separados (`build:core`, `build:react`, `build:angular`) y build integrado.
+- Pipeline de release con Changesets (`.changeset/` + `.github/workflows/release.yml`).
+- Documentación y ejemplos de uso para Angular y React.
+
+Estado de validación local:
+
+- Build de core, React y Angular en verde.
+- Lint sin errores en los archivos modificados.
+
+---
+
 ## 📦 Instalación
 
 ```bash
@@ -56,6 +79,26 @@ pnpm add @weibook/icons-react
 ---
 
 ## 🚀 Inicio Rápido
+
+### Guía rápida por framework
+
+#### Angular
+
+1. Instala:
+   ```bash
+   npm install @weibook/icons-angular @weibook/icon-core
+   ```
+2. Registra providers (`provideWeibookIconDefaults` + `provideWeibookIconManifest`).
+3. Usa `<wb-icon ...></wb-icon>` en template.
+
+#### React
+
+1. Instala:
+   ```bash
+   npm install @weibook/icons-react @weibook/icon-core
+   ```
+2. Envuelve la app con `WeibookIconsProvider` y pasa `WB_ICON_MANIFEST`.
+3. Renderiza `<WbIcon ... />`.
 
 ### Configuración con Módulos (Angular 14.3+)
 
@@ -824,6 +867,24 @@ Recomendación antes de publicar:
 npm run build
 npm run test -- --watch=false --browsers=ChromeHeadless
 ```
+
+---
+
+## ⏳ Pendiente por acceso npm
+
+Actualmente **la publicación real a npm está pendiente** porque no hay acceso a la cuenta con permisos del scope `@weibook`.
+
+Pendientes cuando se recupere el acceso:
+
+1. Crear/confirmar `NPM_TOKEN` con permisos de publicación.
+2. Configurar ese token en GitHub Actions como secret `NPM_TOKEN`.
+3. Ejecutar el flujo de release (Changesets) y publicar versiones nuevas de:
+   - `@weibook/icon-core`
+   - `@weibook/icons-react`
+   - `@weibook/icons-angular`
+4. Verificar publicación en npm e instalación desde un proyecto limpio.
+
+Hasta ese momento, el trabajo queda completo a nivel de código/build, pero pendiente de publicación.
 
 ---
 
